@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidListing(data) {
+      return data.title is string && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 2000
+        && data.category is string && data.category.size() <= 50
+        && data.price is number && data.price >= 0
+        && data.sellerId is string && data.sellerId.size() <= 128
+        && data.sellerPhone is string && data.sellerPhone.size() <= 30;
+    }
+
+    function isValidSeller(data) {
+      return data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 100
+        && data.phone is string && data.phone.size() <= 30;
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid == request.auth.uid
+        && data.email is string && data.email.size() <= 100;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Public Marketplace Listings
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if isValidListing(incoming());
+      allow update, delete: if true;
+    }
+
+    // Sellers directory
+    match /sellers/{sellerId} {
+      allow read, write: if true;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // App Settings and Subscription Banking Details
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "PartListing": {
+      "title": "Part Listing",
+      "description": "Auto or truck spare part listing in marketplace",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "category": { "type": "string", "maxLength": 50 },
+        "vehicleType": { "type": "string", "enum": ["Car", "Truck", "Both", "Other"] },
+        "condition": { "type": "string", "enum": ["New", "Like New", "Good", "Fair", "Refurbished", "For Parts"] },
+        "price": { "type": "number" },
+        "location": { "type": "string", "maxLength": 100 },
+        "partNumber": { "type": "string", "maxLength": 50 },
+        "brand": { "type": "string", "maxLength": 100 },
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "sellerName": { "type": "string", "maxLength": 100 },
+        "sellerBusinessName": { "type": "string", "maxLength": 100 },
+        "sellerPhone": { "type": "string", "maxLength": 30 },
+        "sellerEmail": { "type": "string", "maxLength": 100 },
+        "isPremium": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "compatibility": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["title", "description", "category", "price", "sellerId", "sellerPhone"]
+    },
+    "Seller": {
+      "title": "Seller Profile",
+      "description": "Spare parts seller profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "businessName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 }
+      },
+      "required": ["name", "email", "phone"]
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "Authenticated user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 100 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "SubscriptionSettings": {
+      "title": "Subscription Settings & Banking Details",
+      "description": "Protected owner banking details and subscription settings",
+      "type": "object",
+      "properties": {
+        "bankName": { "type": "string", "maxLength": 100 },
+        "accountHolder": { "type": "string", "maxLength": 100 },
+        "accountNumber": { "type": "string", "maxLength": 50 },
+        "branchCode": { "type": "string", "maxLength": 20 },
+        "accountType": { "type": "string", "maxLength": 50 },
+        "referenceFormat": { "type": "string", "maxLength": 100 },
+        "monthlyFeeZar": { "type": "number" },
+        "ownerPasscode": { "type": "string", "maxLength": 100 }
+      }
+    }
+  },
+  "firestore": {
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/PartListing" },
+      "description": "Public marketplace listings for spare parts"
+    },
+    "/sellers/{sellerId}": {
+      "schema": { "$ref": "#/entities/Seller" },
+      "description": "Seller directory and profiles"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SubscriptionSettings" },
+      "description": "Application owner settings and banking configurations"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Partssource ZA",
+  "description": "An advertising marketplace app where sellers can subscribe on a monthly basis to post their listings for truck and car parts and accessories, and where clients can get parts in one place.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
