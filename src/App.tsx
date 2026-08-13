@@ -12,6 +12,7 @@ import { DiagnosticAdvisor } from "./components/DiagnosticAdvisor";
 import { CompareModal } from "./components/CompareModal";
 import { SellerLocationMap } from "./components/SellerLocationMap";
 import { SettingsModal } from "./components/SettingsModal";
+import { WebSearchEngineModal } from "./components/WebSearchEngineModal";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
@@ -48,13 +49,23 @@ import {
   ArrowLeft,
   ArrowLeftRight,
   Sparkles,
-  X
+  X,
+  Globe
 } from "lucide-react";
 
 export default function App() {
   // Navigation & Views
   const [activeTab, setActiveTab] = useState<"browse" | "pricing" | "dashboard" | "seller-profile">("browse");
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+
+  // Web Search Engine State
+  const [isWebSearchOpen, setIsWebSearchOpen] = useState<boolean>(false);
+  const [webSearchQuery, setWebSearchQuery] = useState<string>("");
+
+  const handleOpenWebSearch = (initialQ?: string) => {
+    setWebSearchQuery(initialQ || searchQuery || "");
+    setIsWebSearchOpen(true);
+  };
   
   // Listings State
   const [listings, setListings] = useState<PartListing[]>([]);
@@ -417,34 +428,60 @@ export default function App() {
         </div>
 
         {/* Dynamic Navigation Search (only visible on browse view) */}
-        <div className={`flex-1 max-w-xl px-4 lg:px-12 transition-all ${activeTab === "browse" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-          <div className="relative">
+        <div className={`flex-1 max-w-xl px-4 lg:px-10 transition-all ${activeTab === "browse" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+          <div className="relative flex items-center">
             <input 
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search truck & car parts, OEM codes, or keywords..." 
-              className="w-full bg-slate-100 border-none rounded-full py-2 px-10 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 placeholder-slate-400"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  handleOpenWebSearch(searchQuery);
+                }
+              }}
+              placeholder="Search truck & car parts, OEM codes, or press Enter for Live Web..." 
+              className="w-full bg-slate-100 border border-slate-200/80 rounded-full py-2 pl-10 pr-24 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 placeholder-slate-400 shadow-2xs"
             />
             <div className="absolute left-3.5 top-2.5 opacity-40 text-slate-500">
               <Search className="w-4 h-4" />
             </div>
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3.5 top-2 text-xs text-slate-400 hover:text-slate-600 font-semibold"
+            <div className="absolute right-2 flex items-center gap-1">
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold px-1"
+                >
+                  Clear
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleOpenWebSearch(searchQuery)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                title="Search live automotive web & scrap yards with AI Grounding"
               >
-                Clear
+                <Globe className="w-3 h-3" />
+                <span className="hidden sm:inline">Web Search</span>
               </button>
-            )}
+            </div>
           </div>
         </div>
 
         {/* Right Nav Options */}
-        <div className="flex items-center gap-3 lg:gap-6">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
+          <button 
+            onClick={() => handleOpenWebSearch()}
+            className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title="Launch South Africa Parts Web Search Engine"
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-600" />
+            <span>Web Search</span>
+            <span className="bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase">AI</span>
+          </button>
+
           <button 
             onClick={() => { setActiveTab("browse"); }}
-            className={`text-sm font-semibold transition-colors cursor-pointer ${
+            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
               activeTab === "browse" ? "text-blue-600" : "text-slate-600 hover:text-blue-600"
             }`}
           >
@@ -452,11 +489,11 @@ export default function App() {
           </button>
           <button 
             onClick={() => { setActiveTab("pricing"); }}
-            className={`text-sm font-semibold transition-colors cursor-pointer ${
+            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer hidden md:block ${
               activeTab === "pricing" ? "text-blue-600" : "text-slate-600 hover:text-blue-600"
             }`}
           >
-            Subscription Pricing
+            Pricing
           </button>
 
           <button 
@@ -465,7 +502,7 @@ export default function App() {
             title="App Owner Settings & Password Protected Banking"
           >
             <Settings className="w-3.5 h-3.5 text-slate-700" />
-            <span>Settings</span>
+            <span className="hidden sm:inline">Settings</span>
           </button>
           
           {seller ? (
@@ -637,6 +674,39 @@ export default function App() {
           {/* BROWSE VIEW */}
           {activeTab === "browse" && (
             <>
+              {/* Web Search Engine Hero Feature Card */}
+              <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
+                    <Globe className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm sm:text-base font-extrabold text-white">
+                        AI Web Spares Search Engine & Scrap Yard Sourcing
+                      </h2>
+                      <span className="bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        Live Grounding
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-0.5 max-w-2xl">
+                      Can't find a part? Search verified South African auto catalogs, scrap yards, OEM cross-reference codes, and scrap yards in real-time.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleOpenWebSearch()}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Launch Web Search Engine</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Marketplace Stats Header */}
               <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -1217,8 +1287,20 @@ export default function App() {
             setSelectedSellerId(sellerId);
             setActiveTab("seller-profile");
           }}
+          onOpenWebSearch={(q) => handleOpenWebSearch(q)}
         />
       )}
+
+      {/* WEB SEARCH ENGINE MODAL */}
+      <WebSearchEngineModal
+        isOpen={isWebSearchOpen}
+        onClose={() => setIsWebSearchOpen(false)}
+        initialQuery={webSearchQuery}
+        onSelectListing={(item) => {
+          handleViewListing(item);
+          setActiveTab("browse");
+        }}
+      />
 
       {/* FLOATING COMPARE FLOATING BAR */}
       {comparedListingIds.length > 0 && (

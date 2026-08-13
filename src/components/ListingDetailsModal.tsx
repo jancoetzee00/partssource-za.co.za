@@ -5,15 +5,21 @@
 
 import React, { useState } from "react";
 import { PartListing } from "../types";
-import { X, MapPin, Phone, Mail, CheckCircle, MessageSquare, ShieldCheck, Info, Sparkles, AlertCircle, Loader2 } from "lucide-react";
+import { X, MapPin, Phone, Mail, CheckCircle, MessageSquare, ShieldCheck, Info, Sparkles, AlertCircle, Loader2, Globe, Search } from "lucide-react";
 
 interface ListingDetailsModalProps {
   listing: PartListing;
   onClose: () => void;
   onViewSellerProfile?: (sellerId: string) => void;
+  onOpenWebSearch?: (query: string) => void;
 }
 
-export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ listing, onClose, onViewSellerProfile }) => {
+export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ 
+  listing, 
+  onClose, 
+  onViewSellerProfile,
+  onOpenWebSearch
+}) => {
   const [activeTab, setActiveTab] = useState<"phone" | "message">("phone");
   
   // Message Form State
@@ -158,6 +164,19 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ listin
               </span>
               <p className="text-xs text-slate-700 font-semibold mt-0.5">{listing.compatibility}</p>
             </div>
+
+            {onOpenWebSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenWebSearch(listing.partNumber ? `${listing.title} ${listing.partNumber}` : listing.title);
+                }}
+                className="mt-2 w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Search Web Engine & Cross-References</span>
+              </button>
+            )}
           </div>
 
           {/* Price & Seller Connection Pane */}

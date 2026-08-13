@@ -47,6 +47,24 @@ export interface ChatMessage {
   suggestedParts?: string[]; // matching part IDs
 }
 
+export interface WebGroundingSource {
+  title: string;
+  url: string;
+  snippet?: string;
+}
+
+export interface WebSearchEngineResponse {
+  query: string;
+  summary: string;
+  keyInsights?: string[];
+  suggestedOemNumbers?: string[];
+  estimatedPriceRangeZar?: string;
+  sources: WebGroundingSource[];
+  matchingMarketplaceParts?: PartListing[];
+  relatedSearches?: string[];
+  simulated?: boolean;
+}
+
 export interface SubscriptionBankingDetails {
   bankName: string;
   accountHolder: string;
@@ -55,6 +73,9 @@ export interface SubscriptionBankingDetails {
   accountType: string;
   referenceFormat: string;
   monthlyFeeZar: number;
+  starterPriceZar?: number;
+  proPriceZar?: number;
+  enterprisePriceZar?: number;
   ownerPasscode: string;
   lastUpdated?: string;
 }

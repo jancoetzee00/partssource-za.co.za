@@ -5,8 +5,38 @@
 
 import React, { useState } from "react";
 import { Seller, PartListing, SubscriptionBankingDetails } from "../types";
-import { Plus, Sparkles, Star, CheckCircle, CreditCard, LogIn, LogOut, Package, User, PlusCircle, Trash2, ArrowLeft, Loader2, Building, Phone, Building2, Lock, ShieldCheck, Copy, Check } from "lucide-react";
+import { 
+  Plus, 
+  Sparkles, 
+  Star, 
+  CheckCircle, 
+  CreditCard, 
+  LogIn, 
+  LogOut, 
+  Package, 
+  User, 
+  PlusCircle, 
+  Trash2, 
+  ArrowLeft, 
+  Loader2, 
+  Building, 
+  Phone, 
+  Building2, 
+  Lock, 
+  ShieldCheck, 
+  Copy, 
+  Check,
+  FileText,
+  Download,
+  Calendar,
+  Receipt,
+  X,
+  ExternalLink,
+  Shield,
+  FileCheck
+} from "lucide-react";
 import { signInWithGoogle } from "../lib/firestoreServices";
+import { downloadSubscriptionInvoicePdf } from "../lib/generateInvoicePdf";
 
 interface SellerDashboardProps {
   onAddListing: (listing: any) => Promise<any>;
@@ -69,7 +99,55 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
     accountType: "Cheque Account",
     referenceFormat: "SUB-[BUSINESS_NAME]",
     monthlyFeeZar: 499,
+    starterPriceZar: 249,
+    proPriceZar: 499,
+    enterprisePriceZar: 999,
     ownerPasscode: "admin123"
+  };
+
+  const getPlanPrice = (plan: "Starter" | "Pro" | "Enterprise") => {
+    if (plan === "Starter") return activeBank.starterPriceZar ?? 249;
+    if (plan === "Pro") return activeBank.proPriceZar ?? 499;
+    return activeBank.enterprisePriceZar ?? 999;
+  };
+
+  // Invoice & Billing State
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedInvoiceMonth, setSelectedInvoiceMonth] = useState<string>(() => {
+    return new Date().toLocaleString("default", { month: "long", year: "numeric" });
+  });
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [downloadSuccessNotice, setDownloadSuccessNotice] = useState<string | null>(null);
+
+  const getPastMonthsList = () => {
+    const months: { label: string; value: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString("default", { month: "long", year: "numeric" });
+      months.push({ label, value: label });
+    }
+    return months;
+  };
+
+  const handleDownloadInvoicePdf = (customMonth?: string) => {
+    if (!seller) return;
+    setIsDownloadingPdf(true);
+    try {
+      const targetMonth = customMonth || selectedInvoiceMonth || new Date().toLocaleString("default", { month: "long", year: "numeric" });
+      downloadSubscriptionInvoicePdf({
+        seller,
+        bankingDetails: activeBank,
+        month: targetMonth
+      });
+      setDownloadSuccessNotice(`Downloaded Tax Invoice for ${targetMonth}`);
+      setTimeout(() => setDownloadSuccessNotice(null), 4000);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      alert("Failed to generate PDF invoice. Please try again.");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   // Handle Auth Login / Registration
@@ -365,7 +443,18 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {seller.subscription.active && (
+            <button
+              onClick={() => setShowInvoiceModal(true)}
+              className="bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="View and Download Monthly Subscription Tax Invoice"
+            >
+              <Receipt className="w-3.5 h-3.5 text-amber-400" />
+              <span>Tax Invoice (PDF)</span>
+            </button>
+          )}
+
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
@@ -396,6 +485,22 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
           )}
         </div>
       </div>
+
+      {/* Download Success Notice */}
+      {downloadSuccessNotice && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs px-4 py-3 rounded-xl flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-bold">{downloadSuccessNotice}</span>
+          </div>
+          <button 
+            onClick={() => setDownloadSuccessNotice(null)} 
+            className="text-emerald-700 hover:text-emerald-900 p-1 rounded-md cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Subscription Paywall Block */}
       {!seller.subscription.active && !showCheckout && (
@@ -453,7 +558,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                     <p className="text-xs text-slate-500 mt-1">Post up to 10 standard parts per month. Ideal for small local spares yards.</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-bold text-slate-900">R249</span>
+                    <span className="text-lg font-bold text-slate-900">R{getPlanPrice("Starter")}</span>
                     <span className="text-xs text-slate-500 block">/month</span>
                   </div>
                 </div>
@@ -480,7 +585,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                     <p className="text-xs text-slate-500 mt-1">Post unlimited spares + sponsored priority exposure highlighted in search feeds.</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-bold text-slate-900">R499</span>
+                    <span className="text-lg font-bold text-slate-900">R{getPlanPrice("Pro")}</span>
                     <span className="text-xs text-slate-500 block">/month</span>
                   </div>
                 </div>
@@ -501,7 +606,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                     <p className="text-xs text-slate-500 mt-1">Unlimited bakkie & heavy duty truck parts + automated daily catalog imports.</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-bold text-slate-900">R999</span>
+                    <span className="text-lg font-bold text-slate-900">R{getPlanPrice("Enterprise")}</span>
                     <span className="text-xs text-slate-500 block">/month</span>
                   </div>
                 </div>
@@ -599,7 +704,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                   <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-3 rounded-xl">
                     <p className="font-bold mb-1">EFT Activation Instructions:</p>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Please transfer <strong className="font-bold text-amber-950">R{selectedPlan === "Starter" ? "249" : selectedPlan === "Pro" ? "499" : "999"}.00</strong> using the reference code above. Click "Confirm EFT Transfer Sent" to notify billing.
+                      Please transfer <strong className="font-bold text-amber-950">R{getPlanPrice(selectedPlan)}.00</strong> using the reference code above. Click "Confirm EFT Transfer Sent" to notify billing.
                     </p>
                   </div>
 
@@ -685,7 +790,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                   <div className="bg-slate-100 p-3 rounded-lg text-xs text-slate-500 flex items-center justify-between border-t border-slate-200/50">
                     <span>To pay now:</span>
                     <span className="font-bold text-slate-900">
-                      R{selectedPlan === "Starter" ? "249" : selectedPlan === "Pro" ? "499" : "999"}.00
+                      R{getPlanPrice(selectedPlan)}.00
                     </span>
                   </div>
 
@@ -949,46 +1054,236 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
             )}
           </div>
 
-          {/* Seller Inventory List */}
-          <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-            <h3 className="text-lg font-display font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Package className="w-5 h-5 text-slate-500" />
-              My Live Listings ({sellerListings.length})
-            </h3>
-
-            {sellerListings.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs">
-                You haven't posted any vehicle parts yet. Click on "Open Listing Form" to publish your first advert.
+          {/* Seller Inventory List & Subscription Billing */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Monthly Subscription & Billing Quick Box */}
+            <div className="bg-slate-900 text-white rounded-2xl p-5 space-y-4 border border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-amber-400" />
+                  <h4 className="font-bold font-display text-sm">Monthly Subscription</h4>
+                </div>
+                <span className="bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {seller.subscription.plan || "Pro"} Tier
+                </span>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {sellerListings.map((l) => (
-                  <div key={l.id} className="p-3 border border-slate-100 rounded-xl flex items-center justify-between gap-3 bg-slate-50/50">
-                    <div className="overflow-hidden">
-                      <h4 className="font-semibold text-xs text-slate-900 truncate">
-                        {l.title}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold text-amber-600">R{l.price.toLocaleString("en-ZA")}</span>
-                        <span className="text-[9px] text-slate-400 uppercase tracking-wider">{l.category}</span>
+
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between text-slate-400">
+                  <span>Monthly Rate:</span>
+                  <span className="font-bold text-white">R{getPlanPrice(seller.subscription.plan as any)}.00 / mo</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Billing Status:</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Active / Paid
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Renewal Cycle:</span>
+                  <span className="text-slate-300">
+                    {seller.subscription.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadInvoicePdf()}
+                  disabled={isDownloadingPdf}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                >
+                  {isDownloadingPdf ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  <span>Download PDF Invoice ({selectedInvoiceMonth.split(" ")[0]})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowInvoiceModal(true)}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 px-3 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700/50"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  <span>View Tax Invoice Details</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Inventory List */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+              <h3 className="text-lg font-display font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Package className="w-5 h-5 text-slate-500" />
+                My Live Listings ({sellerListings.length})
+              </h3>
+
+              {sellerListings.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-xs">
+                  You haven't posted any vehicle parts yet. Click on "Open Listing Form" to publish your first advert.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sellerListings.map((l) => (
+                    <div key={l.id} className="p-3 border border-slate-100 rounded-xl flex items-center justify-between gap-3 bg-slate-50/50">
+                      <div className="overflow-hidden">
+                        <h4 className="font-semibold text-xs text-slate-900 truncate">
+                          {l.title}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-bold text-amber-600">R{l.price.toLocaleString("en-ZA")}</span>
+                          <span className="text-[9px] text-slate-400 uppercase tracking-wider">{l.category}</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <button
-                      onClick={async () => {
-                        if (confirm(`Are you sure you want to delete "${l.title}"?`)) {
-                          await onDeleteListing(l.id);
-                        }
-                      }}
-                      className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
-                      title="Delete Listing"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to delete "${l.title}"?`)) {
+                            await onDeleteListing(l.id);
+                          }
+                        }}
+                        className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                        title="Delete Listing"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Tax Invoice Modal */}
+      {showInvoiceModal && seller && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-slate-900">Monthly Subscription Tax Invoice</h3>
+                  <p className="text-xs text-slate-500">Download official PDF invoice for SARS tax clearance & business bookkeeping</p>
+                </div>
               </div>
-            )}
+              <button
+                onClick={() => setShowInvoiceModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Month Selector */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                <span>Select Billing Period</span>
+              </label>
+              <select
+                value={selectedInvoiceMonth}
+                onChange={(e) => setSelectedInvoiceMonth(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                {getPastMonthsList().map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label} Subscription Tax Invoice
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Invoice Details Preview Card */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Invoice Number</span>
+                  <p className="font-mono font-bold text-slate-800 text-sm">
+                    INV-ZA-{seller.id.slice(-6).toUpperCase()}-{new Date().getFullYear()}{String(new Date().getMonth() + 1).padStart(2, "0")}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Payment Status</span>
+                  <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 font-bold px-2.5 py-0.5 rounded-full text-[11px] block mt-0.5">
+                    <CheckCircle className="w-3 h-3" /> PAID IN FULL
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Billed To</span>
+                  <p className="font-bold text-slate-800 truncate">{seller.businessName || seller.name}</p>
+                  <p className="text-slate-500 text-[11px] truncate">{seller.email}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Supplier</span>
+                  <p className="font-bold text-slate-800">Partssource ZA (Pty) Ltd</p>
+                  <p className="text-slate-500 text-[11px]">VAT: 4890281742</p>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+                <div className="flex justify-between items-center text-slate-700 font-medium">
+                  <span>{seller.subscription.plan || "Pro"} Plan Subscription ({selectedInvoiceMonth})</span>
+                  <span className="font-bold text-slate-900">R{getPlanPrice(seller.subscription.plan as any)}.00</span>
+                </div>
+                <div className="border-t border-slate-100 pt-2 space-y-1 text-[11px] text-slate-500">
+                  <div className="flex justify-between">
+                    <span>Subtotal (Excl. VAT):</span>
+                    <span>R{(getPlanPrice(seller.subscription.plan as any) / 1.15).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>VAT (15% RSA):</span>
+                    <span>R{(getPlanPrice(seller.subscription.plan as any) - (getPlanPrice(seller.subscription.plan as any) / 1.15)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-slate-900 text-xs pt-1 border-t border-slate-100">
+                    <span>Total Amount Paid (ZAR):</span>
+                    <span className="text-amber-600">R{getPlanPrice(seller.subscription.plan as any)}.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500 flex items-center gap-1.5 bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 text-blue-900">
+                <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Includes verified digital tax clearance stamp & platform banking reconciliation reference.</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowInvoiceModal(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleDownloadInvoicePdf(selectedInvoiceMonth);
+                  setShowInvoiceModal(false);
+                }}
+                disabled={isDownloadingPdf}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-colors flex items-center gap-2 cursor-pointer shadow-md"
+              >
+                {isDownloadingPdf ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                <span>Download PDF Invoice</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

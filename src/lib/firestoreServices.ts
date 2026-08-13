@@ -34,8 +34,125 @@ export const DEFAULT_BANKING_DETAILS: SubscriptionBankingDetails = {
   accountType: "Cheque Account",
   referenceFormat: "SUB-[BUSINESS_NAME]",
   monthlyFeeZar: 499,
+  starterPriceZar: 249,
+  proPriceZar: 499,
+  enterprisePriceZar: 999,
   ownerPasscode: "admin123"
 };
+
+export const INITIAL_SELLERS: Seller[] = [
+  {
+    id: "sel-001",
+    name: "Gert van der Merwe",
+    businessName: "Gauteng Diesel Tech",
+    email: "gert@dieseltech.co.za",
+    phone: "+27 82 555 0192",
+    subscription: {
+      active: true,
+      plan: "Pro",
+      expiryDate: "2026-12-31",
+      amountPaid: 499
+    }
+  },
+  {
+    id: "sel-002",
+    name: "Sipho Khumalo",
+    businessName: "Coastline Truck Spares",
+    email: "info@coastlinetruckspares.co.za",
+    phone: "+27 71 555 3847",
+    subscription: {
+      active: true,
+      plan: "Enterprise",
+      expiryDate: "2027-03-15",
+      amountPaid: 999
+    }
+  },
+  {
+    id: "sel-003",
+    name: "Moegamat Allie",
+    businessName: "Cape Cape Motor Spares",
+    email: "allie@capemotor.co.za",
+    phone: "+27 21 555 4981",
+    subscription: {
+      active: true,
+      plan: "Starter",
+      expiryDate: "2026-09-30",
+      amountPaid: 249
+    }
+  }
+];
+
+/**
+ * Realtime Snapshot Listener for Sellers with Error Handling
+ */
+export function subscribeToSellers(callback: (sellers: Seller[]) => void) {
+  const path = 'sellers';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    async (snapshot) => {
+      if (snapshot.empty) {
+        callback(INITIAL_SELLERS);
+        for (const s of INITIAL_SELLERS) {
+          try {
+            await setDoc(doc(db, 'sellers', s.id), s, { merge: true });
+          } catch (e) {
+            console.warn('Initial seller seed error:', e);
+          }
+        }
+      } else {
+        const items: Seller[] = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.name || 'Seller',
+            businessName: data.businessName || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            subscription: data.subscription || {
+              active: true,
+              plan: 'Pro',
+              expiryDate: '2026-12-31',
+              amountPaid: 499
+            }
+          };
+        });
+        callback(items);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  );
+}
+
+/**
+ * Add / Update Seller in Firestore
+ */
+export async function saveSellerToFirestore(seller: Seller) {
+  const path = `sellers/${seller.id}`;
+  try {
+    const docRef = doc(db, 'sellers', seller.id);
+    await setDoc(docRef, seller, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
+  }
+}
+
+/**
+ * Delete Seller from Firestore
+ */
+export async function deleteSellerFromFirestore(sellerId: string) {
+  const path = `sellers/${sellerId}`;
+  try {
+    await deleteDoc(doc(db, 'sellers', sellerId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
+  }
+}
 
 /**
  * Realtime listener for Subscription Banking Details from Firestore /settings/banking
