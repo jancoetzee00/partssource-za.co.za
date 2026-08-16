@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { signInWithGoogle } from "../lib/firestoreServices";
 import { downloadSubscriptionInvoicePdf } from "../lib/generateInvoicePdf";
+import { SA_PROVINCES, getTownsForProvince } from "../data/saLocations";
 
 interface SellerDashboardProps {
   onAddListing: (listing: any) => Promise<any>;
@@ -71,7 +72,9 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   const [formVehicleType, setFormVehicleType] = useState<"Car" | "Truck" | "Both">("Car");
   const [formCondition, setFormCondition] = useState<"New" | "Like New" | "Good" | "Fair" | "Refurbished" | "For Parts">("Good");
   const [formPrice, setFormPrice] = useState("");
-  const [formLocation, setFormLocation] = useState("");
+  const [formProvince, setFormProvince] = useState("Gauteng");
+  const [formTown, setFormTown] = useState("Kempton Park");
+  const [formLocation, setFormLocation] = useState("Kempton Park, Gauteng");
   const [formPartNumber, setFormPartNumber] = useState("");
   const [formBrand, setFormBrand] = useState("");
   const [formCompatibility, setFormCompatibility] = useState("");
@@ -249,6 +252,8 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
       condition: formCondition,
       price: Number(formPrice),
       location: formLocation,
+      province: formProvince,
+      town: formTown,
       partNumber: formPartNumber,
       brand: formBrand,
       compatibility: formCompatibility || "Fits standard models of specified vehicles.",
@@ -955,17 +960,53 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-                      Your Business Location *
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Business Location (RSA) *
                     </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={formProvince}
+                        onChange={(e) => {
+                          const newProv = e.target.value;
+                          setFormProvince(newProv);
+                          const towns = getTownsForProvince(newProv);
+                          const newTown = towns[0] || "";
+                          setFormTown(newTown);
+                          setFormLocation(newTown ? `${newTown}, ${newProv}` : newProv);
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-hidden focus:border-amber-500"
+                      >
+                        {SA_PROVINCES.map((prov) => (
+                          <option key={prov.name} value={prov.name}>
+                            {prov.name} ({prov.code})
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={formTown}
+                        onChange={(e) => {
+                          const newTown = e.target.value;
+                          setFormTown(newTown);
+                          setFormLocation(newTown ? `${newTown}, ${formProvince}` : formProvince);
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-hidden focus:border-amber-500"
+                      >
+                        {getTownsForProvince(formProvince).map((town) => (
+                          <option key={town} value={town}>
+                            {town}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <input
                       type="text"
                       required
                       value={formLocation}
                       onChange={(e) => setFormLocation(e.target.value)}
                       placeholder="e.g. Kempton Park, Gauteng"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-amber-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-amber-500"
                     />
                   </div>
                 </div>

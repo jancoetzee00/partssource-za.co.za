@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { PartListing, WebSearchEngineResponse, WebGroundingSource } from "../types";
+import { SA_PROVINCES, getTownsForProvince } from "../data/saLocations";
 import { 
   Search, 
   Globe, 
@@ -23,13 +24,17 @@ import {
   Building2, 
   Wrench,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  SlidersHorizontal,
+  Navigation
 } from "lucide-react";
 
 interface WebSearchEngineModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialQuery?: string;
+  initialProvince?: string;
+  initialTown?: string;
   onSelectListing?: (listing: PartListing) => void;
 }
 
@@ -37,9 +42,13 @@ export function WebSearchEngineModal({
   isOpen,
   onClose,
   initialQuery = "",
+  initialProvince = "All Provinces",
+  initialTown = "All Towns",
   onSelectListing
 }: WebSearchEngineModalProps) {
   const [query, setQuery] = useState(initialQuery);
+  const [selectedProvince, setSelectedProvince] = useState<string>(initialProvince);
+  const [selectedTown, setSelectedTown] = useState<string>(initialTown);
   const [vehicleType, setVehicleType] = useState<"All" | "Truck" | "Car">("All");
   const [scope, setScope] = useState<string>("All South Africa");
   const [loading, setLoading] = useState(false);
@@ -47,24 +56,30 @@ export function WebSearchEngineModal({
   const [error, setError] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  const availableTowns = getTownsForProvince(
+    selectedProvince === "All Provinces" ? null : selectedProvince
+  );
+
   // Suggested popular queries in South Africa
   const popularQueries = [
-    { label: "Hilux 2.8 GD-6 Injectors", query: "Toyota Hilux 2.8 GD-6 Denso injectors price SA", type: "Car" },
-    { label: "Scania R480 Heavy Brake Pads", query: "Scania R480 truck heavy duty brake pads part number", type: "Truck" },
-    { label: "VW Polo 1.4 Cylinder Head", query: "VW Polo Vivo 1.4 CLP cylinder head skimmed Cape Town", type: "Car" },
-    { label: "Volvo FH12 Air Suspension", query: "Volvo FH12 rear air suspension airbag replacement bellows", type: "Truck" },
-    { label: "Toyota Quantum Gearbox", query: "Toyota Quantum 2.5 D-4D 5-speed manual gearbox scrap yard", type: "Car" },
-    { label: "Mercedes Actros MP4 Turbo", query: "Mercedes-Benz Actros MP4 heavy truck turbocharger price", type: "Truck" },
-    { label: "BMW F30 M-Sport Bumper", query: "BMW 3 Series F30 M-Sport front bumper OEM white", type: "Car" },
-    { label: "Ford Ranger 3.2 TDCi Clutch", query: "Ford Ranger 3.2 TDCi dual mass flywheel and clutch kit", type: "Car" }
+    { label: "Hilux 2.8 GD-6 Injectors", query: "Toyota Hilux 2.8 GD-6 Denso injectors price SA", type: "Car", prov: "Gauteng", town: "Kempton Park" },
+    { label: "Scania R480 Heavy Brake Pads", query: "Scania R480 truck heavy duty brake pads part number", type: "Truck", prov: "Gauteng", town: "Germiston" },
+    { label: "VW Polo 1.4 Cylinder Head", query: "VW Polo Vivo 1.4 CLP cylinder head Cape Town", type: "Car", prov: "Western Cape", town: "Bellville" },
+    { label: "Volvo FH12 Air Suspension", query: "Volvo FH12 rear air suspension airbag replacement bellows", type: "Truck", prov: "KwaZulu-Natal", town: "Pinetown" },
+    { label: "Toyota Quantum Gearbox", query: "Toyota Quantum 2.5 D-4D manual gearbox scrap yard", type: "Car", prov: "Gauteng", town: "Pretoria" },
+    { label: "Mercedes Actros MP4 Turbo", query: "Mercedes-Benz Actros MP4 truck turbocharger", type: "Truck", prov: "KwaZulu-Natal", town: "Durban" },
+    { label: "BMW F30 M-Sport Bumper", query: "BMW 3 Series F30 M-Sport front bumper OEM", type: "Car", prov: "Western Cape", town: "Cape Town" },
+    { label: "Ford Ranger 3.2 TDCi Clutch", query: "Ford Ranger 3.2 TDCi clutch kit flywheel", type: "Car", prov: "Eastern Cape", town: "Gqeberha (Port Elizabeth)" }
   ];
 
   useEffect(() => {
     if (initialQuery && initialQuery.trim()) {
       setQuery(initialQuery);
-      handleSearch(initialQuery);
+      if (initialProvince) setSelectedProvince(initialProvince);
+      if (initialTown) setSelectedTown(initialTown);
+      handleSearch(initialQuery, initialProvince, initialTown);
     }
-  }, [initialQuery]);
+  }, [initialQuery, initialProvince, initialTown]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -72,9 +87,17 @@ export function WebSearchEngineModal({
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  const handleSearch = async (searchQuery?: string) => {
+  const handleProvinceChange = (newProv: string) => {
+    setSelectedProvince(newProv);
+    setSelectedTown("All Towns");
+  };
+
+  const handleSearch = async (searchQuery?: string, customProv?: string, customTown?: string) => {
     const q = (searchQuery !== undefined ? searchQuery : query).trim();
     if (!q) return;
+
+    const provToUse = customProv !== undefined ? customProv : selectedProvince;
+    const townToUse = customTown !== undefined ? customTown : selectedTown;
 
     setLoading(true);
     setError(null);
@@ -85,6 +108,8 @@ export function WebSearchEngineModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: q,
+          province: provToUse === "All Provinces" ? undefined : provToUse,
+          town: townToUse === "All Towns" ? undefined : townToUse,
           scope,
           vehicleType: vehicleType === "All" ? "All Vehicles" : vehicleType,
         })
@@ -108,7 +133,7 @@ export function WebSearchEngineModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs animate-fadeIn overflow-y-auto">
-      <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden my-auto">
+      <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden my-auto">
         {/* Modal Top Bar */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -126,7 +151,7 @@ export function WebSearchEngineModal({
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Real-time automotive web crawler & cross-reference intelligence for South African car & truck spares
+                Real-time automotive crawler & cross-reference intelligence narrowed by South African Province & Town
               </p>
             </div>
           </div>
@@ -139,8 +164,8 @@ export function WebSearchEngineModal({
           </button>
         </div>
 
-        {/* Search Bar Controls */}
-        <div className="p-4 sm:p-6 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+        {/* Search Bar Controls & Location Filters */}
+        <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex-shrink-0 space-y-3">
           <form 
             onSubmit={(e) => {
               e.preventDefault();
@@ -149,13 +174,13 @@ export function WebSearchEngineModal({
             className="flex flex-col gap-3"
           >
             {/* Search Input Row */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Enter part name, OEM code, model (e.g., Hilux 2.8 injectors, Scania R480 brake pads, Polo cylinder head)..."
+                  placeholder="Enter part name, OEM code, or model (e.g. Hilux 2.8 injectors, Scania R480 brake pads, Polo cylinder head)..."
                   className="w-full bg-white border border-slate-300 rounded-xl py-3 pl-11 pr-10 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-2xs"
                   autoFocus
                 />
@@ -170,10 +195,11 @@ export function WebSearchEngineModal({
                   </button>
                 )}
               </div>
+
               <button
                 type="submit"
                 disabled={loading || !query.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2 transition-all cursor-pointer flex-shrink-0"
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer flex-shrink-0"
               >
                 {loading ? (
                   <>
@@ -189,8 +215,83 @@ export function WebSearchEngineModal({
               </button>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+            {/* Province & Town Narrowing Bar */}
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+              {/* Province Selector */}
+              <div className="sm:col-span-4 flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Province</label>
+                  <select
+                    value={selectedProvince}
+                    onChange={(e) => handleProvinceChange(e.target.value)}
+                    className="w-full bg-transparent text-xs font-bold text-slate-800 border-none p-0 focus:ring-0 cursor-pointer"
+                  >
+                    <option value="All Provinces">All 9 SA Provinces</option>
+                    {SA_PROVINCES.map((prov) => (
+                      <option key={prov.name} value={prov.name}>
+                        {prov.name} ({prov.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="hidden sm:block w-px h-7 bg-slate-200"></div>
+
+              {/* Town Selector */}
+              <div className="sm:col-span-4 flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center flex-shrink-0">
+                  <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Town / City</label>
+                  <select
+                    value={selectedTown}
+                    onChange={(e) => setSelectedTown(e.target.value)}
+                    className="w-full bg-transparent text-xs font-bold text-slate-800 border-none p-0 focus:ring-0 cursor-pointer"
+                  >
+                    <option value="All Towns">
+                      {selectedProvince === "All Provinces" ? "All Towns in RSA" : `All Towns in ${selectedProvince}`}
+                    </option>
+                    {availableTowns.map((townName) => (
+                      <option key={townName} value={townName}>
+                        {townName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Location Badge / Indicator */}
+              <div className="sm:col-span-3.5 flex items-center justify-end gap-1.5 pl-2">
+                <span className="text-[11px] text-slate-600 font-medium bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span className="truncate max-w-[140px]">
+                    {selectedTown !== "All Towns" ? `${selectedTown}, ` : ""}
+                    {selectedProvince !== "All Provinces" ? selectedProvince : "South Africa"}
+                  </span>
+                </span>
+                {(selectedProvince !== "All Provinces" || selectedTown !== "All Towns") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvince("All Provinces");
+                      setSelectedTown("All Towns");
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-rose-600 font-semibold cursor-pointer"
+                    title="Reset location filter"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Pills & Vehicle Type */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">Vehicle:</span>
                 <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
@@ -211,7 +312,7 @@ export function WebSearchEngineModal({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">Scope:</span>
                 {["All South Africa", "Scrap Yards & Salvage", "OEM Cross-Ref", "Price Guide"].map((s) => (
                   <button
@@ -231,12 +332,12 @@ export function WebSearchEngineModal({
             </div>
           </form>
 
-          {/* Quick Click Search Chips */}
-          <div className="mt-3 pt-3 border-t border-slate-200/60">
+          {/* Quick Click Popular Searches Narrowed by Province & Town */}
+          <div className="pt-2 border-t border-slate-200/60">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mr-1 flex-shrink-0">
                 <TrendingUp className="w-3 h-3 text-blue-600" />
-                Popular:
+                Popular By Area:
               </span>
               {popularQueries.map((item) => (
                 <button
@@ -245,11 +346,16 @@ export function WebSearchEngineModal({
                   onClick={() => {
                     setQuery(item.query);
                     setVehicleType(item.type as any);
-                    handleSearch(item.query);
+                    setSelectedProvince(item.prov);
+                    setSelectedTown(item.town);
+                    handleSearch(item.query, item.prov, item.town);
                   }}
-                  className="bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer flex-shrink-0"
+                  className="bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 flex-shrink-0"
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  <span className="text-[10px] text-slate-400 bg-slate-50 px-1 py-0.2 rounded">
+                    {item.town}
+                  </span>
                 </button>
               ))}
             </div>
@@ -265,9 +371,12 @@ export function WebSearchEngineModal({
                 <Globe className="w-6 h-6 text-blue-600 absolute inset-0 m-auto animate-pulse" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Querying Web Automotive Sources...</h3>
+                <h3 className="text-base font-bold text-slate-900">
+                  Querying South African Automotive Sources
+                  {selectedProvince !== "All Provinces" ? ` in ${selectedTown !== "All Towns" ? `${selectedTown}, ${selectedProvince}` : selectedProvince}` : ""}...
+                </h3>
                 <p className="text-xs text-slate-500 max-w-md mt-1">
-                  Scanning South African scrap yards, parts distributors, OEM catalogs, and Partssource ZA listings for "{query}"
+                  Scanning verified scrap yards, parts distributors, and salvage networks for "{query}"
                 </p>
               </div>
             </div>
@@ -295,13 +404,24 @@ export function WebSearchEngineModal({
                 <Search className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Search Any Car or Truck Part Across South Africa</h3>
+                <h3 className="text-base font-bold text-slate-900">
+                  Search Any Part Across South African Provinces & Towns
+                </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Type an automotive component, vehicle model, OEM part number, or symptom above to search the web, scrap yards, and local verified marketplace inventory simultaneously.
+                  Narrow searches down to Gauteng, Western Cape, KZN, Eastern Cape, or specific towns like Kempton Park, Bellville, Durban, or Centurion to pinpoint closest suppliers and scrap yards.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-2">
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 mb-1">
+                    <MapPin className="w-4 h-4 text-amber-600" />
+                    <span>Province & Town Narrowing</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Filter by any of the 9 provinces or individual towns to locate local dismantlers.
+                  </p>
+                </div>
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-800 mb-1">
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -309,15 +429,6 @@ export function WebSearchEngineModal({
                   </div>
                   <p className="text-[11px] text-slate-500">
                     Extracts live prices, scrap yard availability, and reputable RSA suppliers.
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 mb-1">
-                    <ShieldCheck className="w-4 h-4 text-blue-600" />
-                    <span>Dual Marketplace Matches</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Instantly cross-matches verified seller listings on Partssource ZA with zero buyer fees.
                   </p>
                 </div>
               </div>
@@ -332,10 +443,18 @@ export function WebSearchEngineModal({
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700/60 pb-4 mb-4">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5 mb-1">
-                      <Sparkles className="w-3 h-3" />
-                      Search Engine Grounded Intelligence
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" />
+                        Search Engine Grounded Intelligence
+                      </span>
+                      {(result.province || result.town) && (
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <MapPin className="w-2.5 h-2.5" />
+                          {result.town ? `${result.town}, ` : ""}{result.province || "South Africa"}
+                        </span>
+                      )}
+                    </div>
                     <h3 className="text-xl font-extrabold text-white">
                       Results for "{result.query}"
                     </h3>
@@ -431,7 +550,7 @@ export function WebSearchEngineModal({
                               {item.category}
                             </span>
                             <span className="text-slate-500 flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
+                              <MapPin className="w-3 h-3 text-amber-500" />
                               {item.location}
                             </span>
                           </div>

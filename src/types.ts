@@ -55,6 +55,8 @@ export interface WebGroundingSource {
 
 export interface WebSearchEngineResponse {
   query: string;
+  province?: string;
+  town?: string;
   summary: string;
   keyInsights?: string[];
   suggestedOemNumbers?: string[];

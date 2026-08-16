@@ -664,7 +664,7 @@ app.post("/api/gemini/advisor", async (req, res) => {
 
 // 10. GEMINI API: Web Search Engine with Google Search Grounding for South African Spares
 app.post("/api/gemini/web-search", async (req, res) => {
-  const { query, scope, vehicleType, category } = req.body;
+  const { query, province, town, scope, vehicleType, category } = req.body;
 
   if (!query || typeof query !== "string" || !query.trim()) {
     return res.status(400).json({ error: "Please provide a valid search query." });
@@ -672,52 +672,76 @@ app.post("/api/gemini/web-search", async (req, res) => {
 
   const cleanQuery = query.trim();
   const qLower = cleanQuery.toLowerCase();
+  const provLower = (province && typeof province === "string" && province !== "All Provinces") ? province.trim().toLowerCase() : null;
+  const townLower = (town && typeof town === "string" && town !== "All Towns") ? town.trim().toLowerCase() : null;
 
-  // Find local marketplace matches
+  // Find local marketplace matches (optionally filtered / prioritized by province and town)
   const localMatches = listings.filter(l => {
     const titleMatch = l.title.toLowerCase().includes(qLower);
     const descMatch = l.description.toLowerCase().includes(qLower);
     const partNoMatch = l.partNumber && l.partNumber.toLowerCase().includes(qLower);
     const brandMatch = l.brand && l.brand.toLowerCase().includes(qLower);
     const compMatch = l.compatibility && l.compatibility.toLowerCase().includes(qLower);
-    return titleMatch || descMatch || partNoMatch || brandMatch || compMatch;
+    const matchesQuery = titleMatch || descMatch || partNoMatch || brandMatch || compMatch;
+
+    if (!matchesQuery) return false;
+
+    if (provLower) {
+      const loc = (l.location || "").toLowerCase();
+      if (!loc.includes(provLower)) {
+        // If province doesn't match directly, check if location contains the town
+        if (townLower && !loc.includes(townLower)) return false;
+      }
+    }
+    if (townLower) {
+      const loc = (l.location || "").toLowerCase();
+      if (!loc.includes(townLower)) return false;
+    }
+
+    return true;
   });
+
+  const locationContext = [
+    town && town !== "All Towns" ? `Town: ${town}` : null,
+    province && province !== "All Provinces" ? `Province: ${province}` : "All South Africa Provinces"
+  ].filter(Boolean).join(", ");
 
   const ai = getAI();
 
   if (!ai) {
     // Intelligent simulation with verified South African automotive web sources
-    let summary = `Web search engine results for "${cleanQuery}" in South Africa: Found reputable suppliers, scrap yards, and OEM cross-references.`;
+    const locationSuffix = town && town !== "All Towns" 
+      ? `in ${town}, ${province || "South Africa"}`
+      : province && province !== "All Provinces" 
+        ? `in ${province}` 
+        : "across South Africa";
+
+    let summary = `Web search results for "${cleanQuery}" ${locationSuffix}: Found verified scrap yards, auto spares distributors, and OEM cross-reference availability.`;
     let keyInsights: string[] = [
-      `Widely available across South African spares networks and regional scrap yards (Gauteng, KZN, Western Cape).`,
+      `Widely stocked across verified automotive scrap yards and spares networks ${locationSuffix}.`,
       `OEM and aftermarket replacement units from brands like Bosch, Denso, Febi Bilstein, Sachs, and OEM Genuine.`,
       `Always cross-check engine code, chassis number (VIN), or part stamping before purchasing.`
     ];
     let suggestedOemNumbers: string[] = [];
     let estimatedPriceRangeZar = "R 1,500 - R 8,500 (depending on condition and OEM vs aftermarket)";
     let sources = [
-      { title: "Masterparts South Africa - Quality Replacement Parts", url: "https://www.masterparts.com", snippet: "Browse replacement automotive spares, engine components, and electrical parts across RSA branches." },
-      { title: "Goldwagen Auto Spares South Africa", url: "https://www.goldwagen.com", snippet: "Direct supplier of German and European passenger vehicle parts, clutch kits, and brake systems." },
-      { title: "Sparesboyz Scrap Yards & Salvage Parts (Durban & Cape Town)", url: "https://www.sparesboyz.co.za", snippet: "Scrap yard parts, stripping for spares, clean engines, gearboxes, and body panels." },
-      { title: "Midas South Africa Parts & Accessories", url: "https://www.midas.co.za", snippet: "Retail auto parts, service kits, suspension bushings, and commercial fleet hardware." }
+      { title: `Masterparts South Africa (${province || "National"})`, url: "https://www.masterparts.com", snippet: `Browse replacement automotive spares, engine components, and electrical parts in ${province || "South Africa"}.` },
+      { title: `Goldwagen Auto Spares (${town || province || "National"})`, url: "https://www.goldwagen.com", snippet: `Direct supplier of German and European vehicle parts, clutch kits, and brake systems.` },
+      { title: `Sparesboyz Scrap Yards & Salvage Parts (${province || "National"})`, url: "https://www.sparesboyz.co.za", snippet: `Scrap yard parts, stripping for spares, clean engines, gearboxes, and body panels.` },
+      { title: `Midas Parts & Accessories Hub (${town || province || "National"})`, url: "https://www.midas.co.za", snippet: `Retail auto parts, service kits, suspension bushings, and commercial fleet hardware.` }
     ];
 
     if (qLower.includes("hilux") || qLower.includes("toyota") || qLower.includes("injector")) {
-      summary = `Toyota Hilux 2.8 GD-6 and 2.4 GD-6 Common Rail Diesel Injectors (Denso / Toyota OEM). Current market analysis across South African diesel workshops and scrapyards indicates strong availability for both new Denso units and remanufactured sets.`;
+      summary = `Toyota Hilux 2.8 GD-6 and 2.4 GD-6 Common Rail Diesel Injectors (Denso / Toyota OEM) ${locationSuffix}. Strong availability for new Denso units and tested scrap yard injector sets.`;
       keyInsights = [
         "OEM Denso injector part numbers: 23670-0E010 / 23670-0E020 for 1GD-FTV and 2GD-FTV engines.",
-        "Brand new Denso OEM set of 4 typically retails between R18,000 - R26,000 ZAR; tested good used sets range from R11,000 - R14,000 ZAR.",
-        "Ensure injector coding (compensation codes) is programmed into the ECU using Toyota Techstream or compliant diagnostic scanner after fitment."
+        `Brand new Denso OEM set of 4 typically retails between R18,000 - R26,000 ZAR; tested good used sets range from R11,000 - R14,000 ZAR ${locationSuffix}.`,
+        "Ensure injector coding (compensation codes) is programmed into the ECU using Toyota Techstream or diagnostic scanner after fitment."
       ];
       suggestedOemNumbers = ["23670-0E010", "23670-0E020", "295700-0550", "23670-11010"];
       estimatedPriceRangeZar = "R 11,500 - R 24,000 (Set of 4)";
-      sources = [
-        { title: "Toyota South Africa Genuine Spares Catalog", url: "https://www.toyota.co.za", snippet: "Authentic GD-6 fuel injection equipment, Denso injectors and high pressure pumps." },
-        { title: "Gauteng Diesel Tech & Turbochargers", url: "https://www.dieseltech.co.za", snippet: "Common rail diesel injector testing, refurbishment, and calibration bench testing." },
-        { title: "Partssource ZA Verified Marketplace", url: "https://partssource.co.za", snippet: "Toyota Hilux 2.8 GD-6 OEM Fuel Injectors currently listed in Gauteng." }
-      ];
     } else if (qLower.includes("scania") || qLower.includes("truck") || qLower.includes("brake")) {
-      summary = `Scania R-Series & G-Series Commercial Heavy Duty Truck Spares & Braking Systems. Grounded search across South African commercial transport distributors in KZN and Gauteng.`;
+      summary = `Scania R-Series & G-Series Commercial Heavy Duty Truck Spares & Braking Systems ${locationSuffix}. Sourced from commercial heavy vehicle dismantlers.`;
       keyInsights = [
         "Heavy duty brake pad kits fit Scania R480, R500, G460, and Streamline truck tractors.",
         "OEM Part Number reference: 1856110 / 2091889 / 1856111 (Beral 29174 friction material).",
@@ -726,7 +750,7 @@ app.post("/api/gemini/web-search", async (req, res) => {
       suggestedOemNumbers = ["1856110", "2091889", "2325212", "1856111"];
       estimatedPriceRangeZar = "R 3,500 - R 6,200";
     } else if (qLower.includes("polo") || qLower.includes("cylinder head") || qLower.includes("vw")) {
-      summary = `Volkswagen Polo / Polo Vivo 1.4 & 1.6 Cylinder Head (CLP, CLS, BAH engine codes). High demand part across Western Cape and Gauteng salvage yards and engine engineering centers.`;
+      summary = `Volkswagen Polo / Polo Vivo 1.4 & 1.6 Cylinder Head (CLP, CLS, BAH engine codes) ${locationSuffix}. High availability across local scrapyards and engine engineering centers.`;
       keyInsights = [
         "OEM reference code: 03C103351A (Complete assembled with valves & camshafts).",
         "Refurbished / skimmed heads with new valve guides average R5,500 - R7,500 ZAR; bare new heads range around R8,000 - R11,000 ZAR.",
@@ -738,6 +762,8 @@ app.post("/api/gemini/web-search", async (req, res) => {
 
     return res.json({
       query: cleanQuery,
+      province: province || undefined,
+      town: town || undefined,
       summary,
       keyInsights,
       suggestedOemNumbers,
@@ -745,10 +771,10 @@ app.post("/api/gemini/web-search", async (req, res) => {
       sources,
       matchingMarketplaceParts: localMatches,
       relatedSearches: [
-        `${cleanQuery} scrap yard South Africa`,
-        `${cleanQuery} price Gauteng`,
-        `${cleanQuery} OEM part number`,
-        `${cleanQuery} Goldwagen Midas price`
+        `${cleanQuery} scrap yard ${town || province || "South Africa"}`,
+        `${cleanQuery} price ${province || "Gauteng"}`,
+        `${cleanQuery} OEM part number lookup`,
+        `${cleanQuery} auto spares ${town || province || "near me"}`
       ],
       simulated: true
     });
@@ -758,18 +784,20 @@ app.post("/api/gemini/web-search", async (req, res) => {
     const searchPrompt = `You are the specialized "Partssource ZA Web Auto Spares Search Engine", an intelligent South African vehicle & commercial truck parts search system.
     
     The user is searching for: "${cleanQuery}"
+    Location Focus: ${locationContext}
     Vehicle filter context: ${vehicleType || "All Vehicles (Cars & Heavy Duty Trucks)"}
     Category: ${category || "General Spares"}
     Scope: ${scope || "Comprehensive Web & Salvage Search"}
     
     Perform a real-time web search for this automotive part in South Africa using Google Search.
+    ${province || town ? `IMPORTANT LOCATION INSTRUCTION: Focus especially on scrap yards, salvage recyclers, auto spares shops, distributors, and engineering workshops situated in or servicing ${town ? town + ', ' + (province || 'South Africa') : province + ', South Africa'}.` : ''}
     
     Provide comprehensive, factual, and actionable spares search intelligence:
-    1. Concise Summary: What this part is, main vehicle models it fits, and availability in South Africa (mention key regions like Gauteng, Durban KZN, Cape Town).
-    2. Key Insights: 3-4 bullet points highlighting OEM brands (e.g., Bosch, Denso, Beral, Sachs, OEM Genuine), common failure symptoms, fitment notes, and what buyers should check (VIN, engine codes).
+    1. Concise Summary: What this part is, main vehicle models it fits, and availability in South Africa (specifically noting availability in ${town ? town + ', ' + province : (province || "key provinces like Gauteng, KZN, Western Cape")}).
+    2. Key Insights: 3-4 bullet points highlighting OEM brands (e.g., Bosch, Denso, Beral, Sachs, OEM Genuine), common failure symptoms, fitment notes, and local sourcing advice for ${town || province || "South Africa"}.
     3. Suggested OEM / Interchange Part Numbers: List 2 to 5 exact OEM or aftermarket reference numbers.
-    4. Estimated Price Range in South African Rand (ZAR): Realistic market price range for new vs used/scrap yard parts.
-    5. Related Search Queries: 3 to 4 related search terms for finding this spare in South Africa.
+    4. Estimated Price Range in South African Rand (ZAR): Realistic market price range for new vs used/scrap yard parts in South Africa.
+    5. Related Search Queries: 3 to 4 related search terms for finding this spare in ${town || province || "South Africa"}.
     
     Format the response clearly so it can be easily presented to car and truck owners, mechanics, and scrap yard seekers.`;
 

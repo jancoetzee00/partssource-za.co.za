@@ -64,6 +64,14 @@
         "monthlyFeeZar": { "type": "number" },
         "ownerPasscode": { "type": "string", "maxLength": 100 }
       }
+    },
+    "TestConnection": {
+      "title": "Test Connection",
+      "description": "Connection test doc for Firestore health checks",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -82,6 +90,10 @@
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/SubscriptionSettings" },
       "description": "Application owner settings and banking configurations"
+    },
+    "/test/{testId}": {
+      "schema": { "$ref": "#/entities/TestConnection" },
+      "description": "Connection test doc for Firestore health checks"
     }
   }
 }

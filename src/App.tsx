@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { PartListing, Seller, SubscriptionBankingDetails } from "./types";
+import { SA_PROVINCES, getTownsForProvince, matchesLocation } from "./data/saLocations";
 import { ListingCard } from "./components/ListingCard";
 import { ListingDetailsModal } from "./components/ListingDetailsModal";
 import { SellerDashboard } from "./components/SellerDashboard";
@@ -50,7 +51,8 @@ import {
   ArrowLeftRight,
   Sparkles,
   X,
-  Globe
+  Globe,
+  Navigation
 } from "lucide-react";
 
 export default function App() {
@@ -61,9 +63,13 @@ export default function App() {
   // Web Search Engine State
   const [isWebSearchOpen, setIsWebSearchOpen] = useState<boolean>(false);
   const [webSearchQuery, setWebSearchQuery] = useState<string>("");
+  const [webSearchProvince, setWebSearchProvince] = useState<string>("All Provinces");
+  const [webSearchTown, setWebSearchTown] = useState<string>("All Towns");
 
-  const handleOpenWebSearch = (initialQ?: string) => {
+  const handleOpenWebSearch = (initialQ?: string, initialProv?: string, initialTown?: string) => {
     setWebSearchQuery(initialQ || searchQuery || "");
+    setWebSearchProvince(initialProv || selectedProvince || "All Provinces");
+    setWebSearchTown(initialTown || selectedTown || "All Towns");
     setIsWebSearchOpen(true);
   };
   
@@ -74,6 +80,8 @@ export default function App() {
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
+  const [selectedTown, setSelectedTown] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedVehicleType, setSelectedVehicleType] = useState<"Car" | "Truck" | "Other" | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
@@ -131,6 +139,27 @@ export default function App() {
   const [bankingDetails, setBankingDetails] = useState<SubscriptionBankingDetails>(DEFAULT_BANKING_DETAILS);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
+  // Determine if running on local app / dev environment (hidden from public view)
+  const isLocalApp = React.useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const host = window.location.hostname || "";
+    const search = window.location.search || "";
+    
+    const isLocalHostname = 
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host.endsWith(".localhost") ||
+      host.startsWith("ais-dev-");
+
+    const isOwnerQuery = 
+      search.includes("admin=true") || 
+      search.includes("local=true") || 
+      search.includes("owner=true");
+
+    return Boolean(isLocalHostname || isOwnerQuery);
+  }, []);
+
   // Subscribe to Banking Details from Firestore
   useEffect(() => {
     const unsub = subscribeToBankingDetails((data) => {
@@ -165,6 +194,9 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  // Available towns for current province
+  const availableTowns = getTownsForProvince(selectedProvince);
+
   // Live Firestore Subscription & Auto Seeding
   useEffect(() => {
     setLoading(true);
@@ -198,6 +230,12 @@ export default function App() {
             (item.brand && item.brand.toLowerCase().includes(q))
           );
         }
+        // Location Filtering: Province & Town
+        if (selectedProvince || selectedTown) {
+          filtered = filtered.filter(item => 
+            matchesLocation(item.location, selectedProvince, selectedTown)
+          );
+        }
         if (selectedCategory) filtered = filtered.filter(i => i.category === selectedCategory);
         if (selectedVehicleType) filtered = filtered.filter(i => i.vehicleType === selectedVehicleType || i.vehicleType === "Both");
         if (selectedCondition) filtered = filtered.filter(i => i.condition === selectedCondition);
@@ -217,7 +255,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [searchQuery, selectedCategory, selectedVehicleType, selectedCondition, minPrice, maxPrice, sortOrder]);
+  }, [searchQuery, selectedProvince, selectedTown, selectedCategory, selectedVehicleType, selectedCondition, minPrice, maxPrice, sortOrder]);
 
   // Keep stats dynamic
   useEffect(() => {
@@ -405,9 +443,16 @@ export default function App() {
     setSelectedCategory(null);
     setSelectedVehicleType(null);
     setSelectedCondition(null);
+    setSelectedProvince(null);
+    setSelectedTown(null);
     setMinPrice("");
     setMaxPrice("");
     setSearchQuery("");
+  };
+
+  const handleProvinceSelect = (prov: string | null) => {
+    setSelectedProvince(prov);
+    setSelectedTown(null);
   };
 
   return (
@@ -496,14 +541,17 @@ export default function App() {
             Pricing
           </button>
 
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="text-slate-700 hover:text-blue-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-full shadow-2xs"
-            title="App Owner Settings & Password Protected Banking"
-          >
-            <Settings className="w-3.5 h-3.5 text-slate-700" />
-            <span className="hidden sm:inline">Settings</span>
-          </button>
+          {/* Owner Settings: Only visible on local / dev app */}
+          {isLocalApp && (
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="text-slate-700 hover:text-blue-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-full shadow-2xs"
+              title="App Owner Settings & Banking Configuration (Local Mode Only)"
+            >
+              <Settings className="w-3.5 h-3.5 text-slate-700" />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
+          )}
           
           {seller ? (
             <button 
@@ -527,11 +575,11 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR FILTER PANEL - Only visible during browse mode */}
         {activeTab === "browse" && (
-          <aside className="w-64 bg-white border-r border-slate-200 p-6 flex flex-col flex-shrink-0 hidden md:flex overflow-y-auto">
+          <aside className="w-68 bg-white border-r border-slate-200 p-5 sm:p-6 flex flex-col flex-shrink-0 hidden md:flex overflow-y-auto">
             {/* Filter Reset Button */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-5">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filters & Fitments</span>
-              {(selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
+              {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
                 <button 
                   onClick={clearAllFilters}
                   className="text-[10px] font-bold text-blue-600 hover:text-blue-700 underline cursor-pointer"
@@ -539,6 +587,92 @@ export default function App() {
                   Clear All
                 </button>
               )}
+            </div>
+
+            {/* Filter Section: Location Narrowing (Province & Town) */}
+            <div className="mb-6 pb-6 border-b border-slate-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                  Location (RSA)
+                </h3>
+                {(selectedProvince || selectedTown) && (
+                  <button
+                    onClick={() => {
+                      setSelectedProvince(null);
+                      setSelectedTown(null);
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-rose-600 font-semibold"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Province Select */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">
+                  Province
+                </label>
+                <select
+                  value={selectedProvince || ""}
+                  onChange={(e) => handleProvinceSelect(e.target.value ? e.target.value : null)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="">All 9 Provinces (RSA)</option>
+                  {SA_PROVINCES.map((prov) => (
+                    <option key={prov.name} value={prov.name}>
+                      {prov.name} ({prov.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Town / City Select */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">
+                  Town / City
+                </label>
+                <select
+                  value={selectedTown || ""}
+                  onChange={(e) => setSelectedTown(e.target.value ? e.target.value : null)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="">
+                    {selectedProvince ? `All Towns in ${selectedProvince}` : "All Towns in South Africa"}
+                  </option>
+                  {availableTowns.map((town) => (
+                    <option key={town} value={town}>
+                      {town}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quick Major Province Chips */}
+              <div className="pt-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Quick Province:
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape"].map((provName) => {
+                    const isSelected = selectedProvince === provName;
+                    return (
+                      <button
+                        key={provName}
+                        onClick={() => handleProvinceSelect(isSelected ? null : provName)}
+                        className={`text-[10px] px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-600 text-white font-bold"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                        }`}
+                      >
+                        {provName === "KwaZulu-Natal" ? "KZN" : provName === "Western Cape" ? "WC" : provName === "Eastern Cape" ? "EC" : "GP"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Filter Section: Vehicle / Fleet Type */}
@@ -574,7 +708,7 @@ export default function App() {
             </div>
 
             {/* Filter Section: Category Selectors */}
-            <div className="mb-6 pb-6 border-b border-slate-100 flex-1 min-h-[220px]">
+            <div className="mb-6 pb-6 border-b border-slate-100 flex-1 min-h-[200px]">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Category</h3>
               <div className="space-y-1.5 text-xs text-slate-600">
                 <div 
@@ -753,9 +887,22 @@ export default function App() {
               </header>
 
               {/* Filtering indicators if active */}
-              {(selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
+              {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
                 <div className="flex flex-wrap items-center gap-2 bg-white/70 border border-slate-200 p-3 rounded-xl">
                   <span className="text-xs text-slate-400 font-bold uppercase mr-1">Active:</span>
+                  {selectedProvince && (
+                    <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                      <MapPin className="w-3 h-3 text-amber-600" />
+                      <span>{selectedProvince}</span>
+                      <button onClick={() => { setSelectedProvince(null); setSelectedTown(null); }} className="hover:text-amber-950 ml-1">×</button>
+                    </span>
+                  )}
+                  {selectedTown && (
+                    <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                      <span>Town: {selectedTown}</span>
+                      <button onClick={() => setSelectedTown(null)} className="hover:text-amber-950 ml-1">×</button>
+                    </span>
+                  )}
                   {selectedCategory && (
                     <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                       {selectedCategory}
@@ -788,7 +935,7 @@ export default function App() {
                   )}
                   <button 
                     onClick={clearAllFilters}
-                    className="text-xs text-slate-500 hover:text-slate-900 underline font-semibold ml-auto"
+                    className="text-xs text-slate-500 hover:text-slate-900 underline font-semibold ml-auto cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -1287,7 +1434,7 @@ export default function App() {
             setSelectedSellerId(sellerId);
             setActiveTab("seller-profile");
           }}
-          onOpenWebSearch={(q) => handleOpenWebSearch(q)}
+          onOpenWebSearch={(q, prov, town) => handleOpenWebSearch(q, prov, town)}
         />
       )}
 
@@ -1296,6 +1443,8 @@ export default function App() {
         isOpen={isWebSearchOpen}
         onClose={() => setIsWebSearchOpen(false)}
         initialQuery={webSearchQuery}
+        initialProvince={webSearchProvince}
+        initialTown={webSearchTown}
         onSelectListing={(item) => {
           handleViewListing(item);
           setActiveTab("browse");

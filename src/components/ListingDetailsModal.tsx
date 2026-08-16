@@ -11,7 +11,7 @@ interface ListingDetailsModalProps {
   listing: PartListing;
   onClose: () => void;
   onViewSellerProfile?: (sellerId: string) => void;
-  onOpenWebSearch?: (query: string) => void;
+  onOpenWebSearch?: (query: string, province?: string, town?: string) => void;
 }
 
 export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ 
@@ -169,7 +169,11 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onOpenWebSearch(listing.partNumber ? `${listing.title} ${listing.partNumber}` : listing.title);
+                  onOpenWebSearch(
+                    listing.partNumber ? `${listing.title} ${listing.partNumber}` : listing.title,
+                    listing.province,
+                    listing.town
+                  );
                 }}
                 className="mt-2 w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
