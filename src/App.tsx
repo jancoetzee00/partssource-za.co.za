@@ -1252,7 +1252,7 @@ export default function App() {
                     </span>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">Individual Mechanic</h3>
                     <div className="flex items-baseline gap-1 py-4 border-b border-slate-100">
-                      <span className="text-3xl font-bold text-slate-900">R249</span>
+                      <span className="text-3xl font-bold text-slate-900">R{bankingDetails.starterPriceZar ?? 249}</span>
                       <span className="text-xs text-slate-400 font-medium">/ month</span>
                     </div>
                     
@@ -1295,7 +1295,7 @@ export default function App() {
                     </span>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">Automotive Workshops</h3>
                     <div className="flex items-baseline gap-1 py-4 border-b border-slate-100">
-                      <span className="text-3xl font-bold text-slate-900">R499</span>
+                      <span className="text-3xl font-bold text-slate-900">R{bankingDetails.proPriceZar ?? 499}</span>
                       <span className="text-xs text-slate-400 font-medium">/ month</span>
                     </div>
                     
@@ -1339,7 +1339,7 @@ export default function App() {
                     </span>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">Importers & Yards</h3>
                     <div className="flex items-baseline gap-1 py-4 border-b border-slate-100">
-                      <span className="text-3xl font-bold text-slate-900">R999</span>
+                      <span className="text-3xl font-bold text-slate-900">R{bankingDetails.enterprisePriceZar ?? 999}</span>
                       <span className="text-xs text-slate-400 font-medium">/ month</span>
                     </div>
                     

@@ -13,7 +13,9 @@ import {
   Save, 
   X, 
   AlertCircle, 
+  AlertTriangle,
   CheckCircle2, 
+  Check,
   Eye, 
   EyeOff, 
   RefreshCw,
@@ -31,7 +33,9 @@ import {
   Mail,
   Phone,
   Building,
-  Loader2
+  Loader2,
+  ArrowRight,
+  TrendingUp
 } from "lucide-react";
 import { SubscriptionBankingDetails, Seller } from "../types";
 import { 
@@ -90,6 +94,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   // Delete Seller Confirm State
   const [deletingSellerId, setDeletingSellerId] = useState<string | null>(null);
 
+  // Pricing & Banking Change Confirmation Modal State
+  const [isPricingConfirmOpen, setIsPricingConfirmOpen] = useState<boolean>(false);
+
   // Sync formState when bankingDetails prop updates
   useEffect(() => {
     setFormState(bankingDetails);
@@ -118,14 +125,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const handleSaveBanking = async (e: React.FormEvent) => {
+  const handleRequestSaveBanking = (e: React.FormEvent) => {
     e.preventDefault();
+    if (
+      (formState.starterPriceZar !== undefined && formState.starterPriceZar < 0) ||
+      (formState.proPriceZar !== undefined && formState.proPriceZar < 0) ||
+      (formState.enterprisePriceZar !== undefined && formState.enterprisePriceZar < 0) ||
+      (formState.monthlyFeeZar !== undefined && formState.monthlyFeeZar < 0)
+    ) {
+      alert("Subscription pricing cannot be negative. Please enter valid ZAR amounts.");
+      return;
+    }
+    setIsPricingConfirmOpen(true);
+  };
+
+  const handleConfirmSaveBanking = async () => {
     setIsSavingBanking(true);
     setBankingSaveSuccess(false);
     try {
       await saveBankingDetailsToFirestore(formState);
       setBankingSaveSuccess(true);
-      setTimeout(() => setBankingSaveSuccess(false), 3500);
+      setIsPricingConfirmOpen(false);
+      setSellerActionNotice("Subscription pricing & banking configuration successfully updated in Firestore!");
+      setTimeout(() => {
+        setBankingSaveSuccess(false);
+        setSellerActionNotice(null);
+      }, 4500);
     } catch (err: any) {
       console.error("Save banking settings error:", err);
       alert("Failed to save settings: " + (err.message || String(err)));
@@ -262,6 +287,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const totalMonthlyRevenue = sellers
     .filter(s => s.subscription?.active)
     .reduce((acc, s) => acc + (s.subscription?.amountPaid || 0), 0);
+
+  // Pricing & Settings Diff Analysis for Confirmation Dialog
+  const starterOld = bankingDetails.starterPriceZar ?? 249;
+  const starterNew = formState.starterPriceZar ?? 249;
+  const hasStarterChanged = starterOld !== starterNew;
+
+  const proOld = bankingDetails.proPriceZar ?? 499;
+  const proNew = formState.proPriceZar ?? 499;
+  const hasProChanged = proOld !== proNew;
+
+  const entOld = bankingDetails.enterprisePriceZar ?? 999;
+  const entNew = formState.enterprisePriceZar ?? 999;
+  const hasEntChanged = entOld !== entNew;
+
+  const monthlyFeeOld = bankingDetails.monthlyFeeZar ?? 499;
+  const monthlyFeeNew = formState.monthlyFeeZar ?? 499;
+  const hasMonthlyFeeChanged = monthlyFeeOld !== monthlyFeeNew;
+
+  const hasAnyPricingChanged = hasStarterChanged || hasProChanged || hasEntChanged || hasMonthlyFeeChanged;
+
+  const hasBankNameChanged = bankingDetails.bankName !== formState.bankName;
+  const hasAccountHolderChanged = bankingDetails.accountHolder !== formState.accountHolder;
+  const hasAccountNumberChanged = bankingDetails.accountNumber !== formState.accountNumber;
+  const hasBranchCodeChanged = bankingDetails.branchCode !== formState.branchCode;
+  const hasAccountTypeChanged = bankingDetails.accountType !== formState.accountType;
+  const hasReferenceFormatChanged = bankingDetails.referenceFormat !== formState.referenceFormat;
+  const hasOwnerPasscodeChanged = bankingDetails.ownerPasscode !== formState.ownerPasscode;
+
+  const hasBankingDetailsChanged = 
+    hasBankNameChanged || 
+    hasAccountHolderChanged || 
+    hasAccountNumberChanged || 
+    hasBranchCodeChanged || 
+    hasAccountTypeChanged || 
+    hasReferenceFormatChanged || 
+    hasOwnerPasscodeChanged;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -622,7 +683,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* TAB 2: BANKING DETAILS */}
               {activeTab === "banking" && (
-                <form onSubmit={handleSaveBanking} className="space-y-6">
+                <form onSubmit={handleRequestSaveBanking} className="space-y-6">
                   {bankingSaveSuccess && (
                     <div className="bg-blue-50 border border-blue-200 text-blue-900 text-xs p-3 rounded-xl flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
@@ -822,7 +883,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      <span>{isSavingBanking ? "Saving..." : "Save Banking Details"}</span>
+                      <span>{isSavingBanking ? "Saving..." : "Review & Update Pricing / Banking"}</span>
                     </button>
                   </div>
                 </form>
@@ -1070,6 +1131,321 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs cursor-pointer"
               >
                 Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PRICING & BANKING UPDATE CONFIRMATION MODAL */}
+      {isPricingConfirmOpen && (
+        <div className="fixed inset-0 z-70 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150 text-left flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-display text-white">
+                    {hasAnyPricingChanged ? "Confirm Subscription Pricing Changes" : "Confirm Settings & Banking Update"}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Review and confirm updates before applying to live marketplace
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPricingConfirmOpen(false)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Cancel & Dismiss"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+              
+              {/* Subscription Plans Pricing Diff Table */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Subscription Plan Prices (Monthly ZAR)</span>
+                  </span>
+                  {hasAnyPricingChanged ? (
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      <span>Rates Modified</span>
+                    </span>
+                  ) : (
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      No Rate Changes
+                    </span>
+                  )}
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                  {/* Starter Tier */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                    hasStarterChanged 
+                      ? "bg-blue-50/80 border-blue-200" 
+                      : "bg-white border-slate-200/80"
+                  }`}>
+                    <div>
+                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>Starter Plan</span>
+                        <span className="text-[10px] font-normal text-slate-500">(10 listings)</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span className={hasStarterChanged ? "line-through text-slate-400 font-semibold" : "font-semibold text-slate-800"}>
+                          R{starterOld}
+                        </span>
+                        {hasStarterChanged && (
+                          <>
+                            <ArrowRight className="w-3 h-3 text-blue-600" />
+                            <span className="font-bold text-blue-700 text-sm">
+                              R{starterNew}
+                            </span>
+                          </>
+                        )}
+                        <span className="text-slate-400">/ mo</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {hasStarterChanged ? (
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                          starterNew > starterOld ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        }`}>
+                          {starterNew > starterOld ? `+R${starterNew - starterOld}` : `-R${starterOld - starterNew}`}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                          Unchanged
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Pro Tier */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                    hasProChanged 
+                      ? "bg-blue-50/80 border-blue-200" 
+                      : "bg-white border-slate-200/80"
+                  }`}>
+                    <div>
+                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>Pro Plan</span>
+                        <span className="text-[10px] font-normal text-slate-500">(Unlimited listings)</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span className={hasProChanged ? "line-through text-slate-400 font-semibold" : "font-semibold text-slate-800"}>
+                          R{proOld}
+                        </span>
+                        {hasProChanged && (
+                          <>
+                            <ArrowRight className="w-3 h-3 text-blue-600" />
+                            <span className="font-bold text-blue-700 text-sm">
+                              R{proNew}
+                            </span>
+                          </>
+                        )}
+                        <span className="text-slate-400">/ mo</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {hasProChanged ? (
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                          proNew > proOld ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        }`}>
+                          {proNew > proOld ? `+R${proNew - proOld}` : `-R${proOld - proNew}`}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                          Unchanged
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Enterprise Tier */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                    hasEntChanged 
+                      ? "bg-blue-50/80 border-blue-200" 
+                      : "bg-white border-slate-200/80"
+                  }`}>
+                    <div>
+                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>Enterprise Plan</span>
+                        <span className="text-[10px] font-normal text-slate-500">(Fleets & Auto-import)</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span className={hasEntChanged ? "line-through text-slate-400 font-semibold" : "font-semibold text-slate-800"}>
+                          R{entOld}
+                        </span>
+                        {hasEntChanged && (
+                          <>
+                            <ArrowRight className="w-3 h-3 text-blue-600" />
+                            <span className="font-bold text-blue-700 text-sm">
+                              R{entNew}
+                            </span>
+                          </>
+                        )}
+                        <span className="text-slate-400">/ mo</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {hasEntChanged ? (
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                          entNew > entOld ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        }`}>
+                          {entNew > entOld ? `+R${entNew - entOld}` : `-R${entOld - entNew}`}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                          Unchanged
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Standard Base Fee */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                    hasMonthlyFeeChanged 
+                      ? "bg-blue-50/80 border-blue-200" 
+                      : "bg-white border-slate-200/80"
+                  }`}>
+                    <div>
+                      <div className="font-bold text-slate-900">Standard Base Fee</div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span className={hasMonthlyFeeChanged ? "line-through text-slate-400 font-semibold" : "font-semibold text-slate-800"}>
+                          R{monthlyFeeOld}
+                        </span>
+                        {hasMonthlyFeeChanged && (
+                          <>
+                            <ArrowRight className="w-3 h-3 text-blue-600" />
+                            <span className="font-bold text-blue-700 text-sm">
+                              R{monthlyFeeNew}
+                            </span>
+                          </>
+                        )}
+                        <span className="text-slate-400">/ mo</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {hasMonthlyFeeChanged ? (
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                          monthlyFeeNew > monthlyFeeOld ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        }`}>
+                          {monthlyFeeNew > monthlyFeeOld ? `+R${monthlyFeeNew - monthlyFeeOld}` : `-R${monthlyFeeOld - monthlyFeeNew}`}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                          Unchanged
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Other Modified Fields (Bank, Passcode, etc.) */}
+              {hasBankingDetailsChanged && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs space-y-1.5">
+                  <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                    Additional Settings Modified:
+                  </div>
+                  <ul className="space-y-1 text-slate-600">
+                    {hasBankNameChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Bank Name: <strong className="text-slate-900">{formState.bankName}</strong></span>
+                      </li>
+                    )}
+                    {hasAccountHolderChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Account Holder: <strong className="text-slate-900">{formState.accountHolder}</strong></span>
+                      </li>
+                    )}
+                    {hasAccountNumberChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Account Number: <strong className="font-mono text-slate-900">{formState.accountNumber}</strong></span>
+                      </li>
+                    )}
+                    {hasBranchCodeChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Branch Code: <strong className="font-mono text-slate-900">{formState.branchCode}</strong></span>
+                      </li>
+                    )}
+                    {hasAccountTypeChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Account Type: <strong className="text-slate-900">{formState.accountType}</strong></span>
+                      </li>
+                    )}
+                    {hasReferenceFormatChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Reference Format: <strong className="font-mono text-slate-900">{formState.referenceFormat}</strong></span>
+                      </li>
+                    )}
+                    {hasOwnerPasscodeChanged && (
+                      <li className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="text-amber-800 font-semibold">Owner Security Passcode will be updated</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Warning / Impact Notice */}
+              <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-amber-900">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block">Live Marketplace Impact Notice:</span>
+                  <p className="text-amber-800 text-[11px] leading-relaxed">
+                    Confirming will immediately publish these subscription rates to the public PartsSource ZA Pricing page, update seller registration invoices, and adjust future renewal quotes.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsPricingConfirmOpen(false)}
+                disabled={isSavingBanking}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel & Review
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmSaveBanking}
+                disabled={isSavingBanking}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                {isSavingBanking ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                )}
+                <span>{isSavingBanking ? "Saving Updates..." : "Confirm & Apply Updates"}</span>
               </button>
             </div>
           </div>
