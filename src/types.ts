@@ -81,3 +81,28 @@ export interface SubscriptionBankingDetails {
   ownerPasscode: string;
   lastUpdated?: string;
 }
+
+export interface PartRequest {
+  id: string;
+  partName: string;
+  category: string;
+  vehicleType: 'Car' | 'Truck' | 'Both' | 'Other';
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleYear?: string;
+  engineCodeOrVin?: string;
+  partNumber?: string;
+  description: string;
+  urgency: 'urgent' | 'standard' | 'flexible';
+  targetBudgetZar?: number;
+  province: string;
+  town: string;
+  buyerName: string;
+  buyerPhone: string;
+  buyerEmail?: string;
+  preferredContact: 'whatsapp' | 'call' | 'email';
+  status: 'open' | 'quotes_received' | 'fulfilled' | 'closed';
+  quotesCount?: number;
+  createdAt: string;
+  userId?: string;
+}

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { PartListing, Seller, SubscriptionBankingDetails } from "./types";
+import { PartListing, PartRequest, Seller, SubscriptionBankingDetails } from "./types";
 import { SA_PROVINCES, getTownsForProvince, matchesLocation } from "./data/saLocations";
 import { ListingCard } from "./components/ListingCard";
 import { ListingDetailsModal } from "./components/ListingDetailsModal";
@@ -14,6 +14,8 @@ import { CompareModal } from "./components/CompareModal";
 import { SellerLocationMap } from "./components/SellerLocationMap";
 import { SettingsModal } from "./components/SettingsModal";
 import { WebSearchEngineModal } from "./components/WebSearchEngineModal";
+import { RequestPartModal } from "./components/RequestPartModal";
+import { PartRequestsView } from "./components/PartRequestsView";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
@@ -21,6 +23,7 @@ import {
   addListingToFirestore, 
   deleteListingFromFirestore, 
   subscribeToBankingDetails,
+  subscribeToPartRequests,
   DEFAULT_BANKING_DETAILS,
   INITIAL_LISTINGS 
 } from "./lib/firestoreServices";
@@ -60,8 +63,13 @@ import {
 
 export default function App() {
   // Navigation & Views
-  const [activeTab, setActiveTab] = useState<"browse" | "pricing" | "dashboard" | "seller-profile">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "pricing" | "dashboard" | "seller-profile" | "requests">("browse");
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+
+  // Part Requests State & Modal
+  const [partRequests, setPartRequests] = useState<PartRequest[]>([]);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState<boolean>(false);
+  const [initialRequestQuery, setInitialRequestQuery] = useState<string>("");
 
   // Mobile Accordion State
   const [isMobileCategoryAccordionOpen, setIsMobileCategoryAccordionOpen] = useState<boolean>(false);
@@ -170,6 +178,14 @@ export default function App() {
   useEffect(() => {
     const unsub = subscribeToBankingDetails((data) => {
       setBankingDetails(data);
+    });
+    return () => unsub();
+  }, []);
+
+  // Subscribe to Part Requests from Firestore
+  useEffect(() => {
+    const unsub = subscribeToPartRequests((reqs) => {
+      setPartRequests(reqs);
     });
     return () => unsub();
   }, []);
@@ -519,10 +535,23 @@ export default function App() {
         </div>
 
         {/* Right Nav Options */}
-        <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+          {/* Direct "Request a Part" Action Button */}
+          <button
+            onClick={() => {
+              setInitialRequestQuery(searchQuery || "");
+              setIsRequestModalOpen(true);
+            }}
+            className="bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+            title="Broadcast hard-to-find part request to 450+ scrapyards"
+          >
+            <PlusCircle className="w-3.5 h-3.5 text-slate-950" />
+            <span>Request a Part</span>
+          </button>
+
           <button 
             onClick={() => handleOpenWebSearch()}
-            className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hidden sm:flex"
             title="Launch South Africa Parts Web Search Engine"
           >
             <Globe className="w-3.5 h-3.5 text-blue-600" />
@@ -533,15 +562,31 @@ export default function App() {
           <button 
             onClick={() => { setActiveTab("browse"); }}
             className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-              activeTab === "browse" ? "text-blue-600" : "text-slate-600 hover:text-blue-600"
+              activeTab === "browse" ? "text-blue-600 font-bold" : "text-slate-600 hover:text-blue-600"
             }`}
           >
             Browse Spares
           </button>
+
+          {/* Part Requests Live Hub Tab */}
+          <button 
+            onClick={() => { setActiveTab("requests"); }}
+            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === "requests" ? "text-blue-600 font-bold" : "text-slate-600 hover:text-blue-600"
+            }`}
+          >
+            <span>Part Requests</span>
+            {partRequests.filter(r => r.status !== 'fulfilled' && r.status !== 'closed').length > 0 && (
+              <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                {partRequests.filter(r => r.status !== 'fulfilled' && r.status !== 'closed').length}
+              </span>
+            )}
+          </button>
+
           <button 
             onClick={() => { setActiveTab("pricing"); }}
-            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer hidden md:block ${
-              activeTab === "pricing" ? "text-blue-600" : "text-slate-600 hover:text-blue-600"
+            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer hidden lg:block ${
+              activeTab === "pricing" ? "text-blue-600 font-bold" : "text-slate-600 hover:text-blue-600"
             }`}
           >
             Pricing
@@ -1042,6 +1087,41 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Part Sourcing Broadcast Banner */}
+              <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm border border-slate-800">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                      Live Sourcing Hub
+                    </span>
+                    <span className="text-xs text-blue-300 font-bold">
+                      Can't find your exact spare part?
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    Broadcast a Part Request to 450+ verified South African scrap yards & receive direct WhatsApp quotes.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  <button
+                    onClick={() => {
+                      setInitialRequestQuery(searchQuery || "");
+                      setIsRequestModalOpen(true);
+                    }}
+                    className="flex-1 sm:flex-initial bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] shrink-0"
+                  >
+                    <PlusCircle className="w-4 h-4 text-slate-950" />
+                    <span>Request a Part</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("requests")}
+                    className="flex-1 sm:flex-initial bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer border border-white/15 shrink-0"
+                  >
+                    <span>Part Requests ({partRequests.filter(r => r.status !== 'fulfilled' && r.status !== 'closed').length})</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Filtering indicators if active */}
               {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
                 <div className="flex flex-wrap items-center gap-2 bg-white/70 border border-slate-200 p-3 rounded-xl">
@@ -1190,20 +1270,32 @@ export default function App() {
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">Loading Marketplace Spares...</span>
                 </div>
               ) : listings.length === 0 ? (
-                <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto my-8 space-y-4 shadow-xs">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 text-center max-w-lg mx-auto my-8 space-y-4 shadow-xs">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
                     <Search className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900">No Spares Matching Filters</h3>
+                  <h3 className="text-lg font-bold text-slate-900">No Spares Matching Current Filters</h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    We couldn't find any listings matching your active filters. Try searching for broader terms (e.g., "Hilux", "Brakes", "Toyota") or clear your filters to explore.
+                    Can't find what you're looking for? You can clear filters, search the web with AI, or broadcast a <strong className="text-slate-800">Part Request</strong> to 450+ verified South African scrap yards.
                   </p>
-                  <button 
-                    onClick={clearAllFilters}
-                    className="bg-slate-950 hover:bg-blue-600 text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer transition-colors"
-                  >
-                    Clear Filters & Show All
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <button 
+                      onClick={clearAllFilters}
+                      className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setInitialRequestQuery(searchQuery || "");
+                        setIsRequestModalOpen(true);
+                      }}
+                      className="w-full sm:w-auto bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      <span>Post a Part Request</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pr-1">
@@ -1550,6 +1642,18 @@ export default function App() {
             </div>
           )}
 
+          {/* PART REQUESTS SOURCING FEED VIEW */}
+          {activeTab === "requests" && (
+            <PartRequestsView 
+              requests={partRequests}
+              onOpenRequestModal={() => {
+                setInitialRequestQuery(searchQuery || "");
+                setIsRequestModalOpen(true);
+              }}
+              seller={seller}
+            />
+          )}
+
           {/* DUSTY ROAD / LIVE FOOTER STATUS BAR */}
           <footer className="h-12 border-t border-slate-200 flex items-center justify-between mt-auto bg-white -mx-6 lg:-mx-8 px-6 lg:px-8 flex-shrink-0">
             <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
@@ -1675,6 +1779,13 @@ export default function App() {
           onViewDetails={(listing) => handleViewListing(listing)}
         />
       )}
+
+      {/* REQUEST A PART SOURCING MODAL */}
+      <RequestPartModal 
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        initialPartQuery={initialRequestQuery}
+      />
 
       {/* APP OWNER PASSWORD PROTECTED SETTINGS MODAL */}
       <SettingsModal 

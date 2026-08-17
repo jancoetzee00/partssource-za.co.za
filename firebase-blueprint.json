@@ -65,6 +65,35 @@
         "ownerPasscode": { "type": "string", "maxLength": 100 }
       }
     },
+    "PartRequest": {
+      "title": "Part Sourcing Request",
+      "description": "Customer and buyer spare part sourcing broadcast requests",
+      "type": "object",
+      "properties": {
+        "partName": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 50 },
+        "vehicleType": { "type": "string", "enum": ["Car", "Truck", "Both", "Other"] },
+        "vehicleMake": { "type": "string", "maxLength": 100 },
+        "vehicleModel": { "type": "string", "maxLength": 100 },
+        "vehicleYear": { "type": "string", "maxLength": 20 },
+        "engineCodeOrVin": { "type": "string", "maxLength": 100 },
+        "partNumber": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "urgency": { "type": "string", "enum": ["urgent", "standard", "flexible"] },
+        "targetBudgetZar": { "type": "number" },
+        "province": { "type": "string", "maxLength": 50 },
+        "town": { "type": "string", "maxLength": 100 },
+        "buyerName": { "type": "string", "maxLength": 100 },
+        "buyerPhone": { "type": "string", "maxLength": 30 },
+        "buyerEmail": { "type": "string", "maxLength": 100 },
+        "preferredContact": { "type": "string", "enum": ["whatsapp", "call", "email"] },
+        "status": { "type": "string", "enum": ["open", "quotes_received", "fulfilled", "closed"] },
+        "quotesCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["partName", "category", "vehicleMake", "vehicleModel", "province", "town", "buyerName", "buyerPhone"]
+    },
     "TestConnection": {
       "title": "Test Connection",
       "description": "Connection test doc for Firestore health checks",
@@ -78,6 +107,10 @@
     "/listings/{listingId}": {
       "schema": { "$ref": "#/entities/PartListing" },
       "description": "Public marketplace listings for spare parts"
+    },
+    "/part_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PartRequest" },
+      "description": "Customer and buyer spare part sourcing broadcast requests"
     },
     "/sellers/{sellerId}": {
       "schema": { "$ref": "#/entities/Seller" },

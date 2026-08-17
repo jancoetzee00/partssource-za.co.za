@@ -3,7 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import { PartListing, Seller } from "./src/types";
+import { PartListing, Seller, PartRequest } from "./src/types";
 
 // Load environment variables
 dotenv.config();
@@ -268,6 +268,100 @@ let sellers: Seller[] = [
   }
 ];
 
+// In-memory Database for Part Sourcing Requests
+let partRequests: PartRequest[] = [
+  {
+    id: "req-101",
+    partName: "Toyota Hilux 2.8 GD-6 Automatic 4x4 Gearbox (Complete)",
+    category: "Gearboxes & Transmissions",
+    vehicleType: "Car",
+    vehicleMake: "Toyota",
+    vehicleModel: "Hilux",
+    vehicleYear: "2019",
+    engineCodeOrVin: "1GD-FTV (6-Speed Auto)",
+    partNumber: "35000-0K400",
+    description: "Urgent replacement needed for farm bakkie. Looking for complete low mileage auto transmission with torque converter in working condition with startup guarantee.",
+    urgency: "urgent",
+    targetBudgetZar: 28000,
+    province: "Gauteng",
+    town: "Pretoria",
+    buyerName: "Kobus Venter",
+    buyerPhone: "+27 82 492 1083",
+    buyerEmail: "kobus@venterboerdery.co.za",
+    preferredContact: "whatsapp",
+    status: "open",
+    quotesCount: 3,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "req-102",
+    partName: "Scania R480 / R500 Complete Rear Differential Assembly",
+    category: "Engines & Drivetrain",
+    vehicleType: "Truck",
+    vehicleMake: "Scania",
+    vehicleModel: "R480 Topline",
+    vehicleYear: "2015",
+    engineCodeOrVin: "R780 Ratio 2.92",
+    partNumber: "1778942",
+    description: "Fleet hauler broken down on N3 near Pietermaritzburg. Looking for clean OEM Scania differential carrier and crown wheel & pinion in good condition.",
+    urgency: "urgent",
+    targetBudgetZar: 45000,
+    province: "KwaZulu-Natal",
+    town: "Pietermaritzburg",
+    buyerName: "Devan Naidoo (Logistics Hub)",
+    buyerPhone: "+27 74 882 9104",
+    buyerEmail: "devan@coastallogistics.co.za",
+    preferredContact: "call",
+    status: "quotes_received",
+    quotesCount: 4,
+    createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "req-103",
+    partName: "Isuzu D-Max 3.0 D-Teq Turbocharger (IHI / OEM)",
+    category: "Engines & Drivetrain",
+    vehicleType: "Car",
+    vehicleMake: "Isuzu",
+    vehicleModel: "D-Max / KB300",
+    vehicleYear: "2020",
+    engineCodeOrVin: "4JJ1-TCX (3.0L Turbo Diesel)",
+    partNumber: "8981506872",
+    description: "Looking for new or tested second-hand turbocharger. Must have no shaft play and intact wastegate actuator.",
+    urgency: "standard",
+    targetBudgetZar: 8500,
+    province: "Western Cape",
+    town: "Paarl",
+    buyerName: "Johan Du Plessis",
+    buyerPhone: "+27 83 912 3341",
+    buyerEmail: "johan@duplessisauto.co.za",
+    preferredContact: "whatsapp",
+    status: "open",
+    quotesCount: 1,
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "req-104",
+    partName: "Mercedes-Benz Actros MP4 Front Bumper & Corner Panels",
+    category: "Body Panels & Bumpers",
+    vehicleType: "Truck",
+    vehicleMake: "Mercedes-Benz",
+    vehicleModel: "Actros 2645",
+    vehicleYear: "2018",
+    description: "Front left side collision damage. In search of OEM front bumper centre section, left corner spoiler, and step bracket. Prefer white finish if available.",
+    urgency: "flexible",
+    targetBudgetZar: 14000,
+    province: "Mpumalanga",
+    town: "Witbank",
+    buyerName: "Tshepo Moloi",
+    buyerPhone: "+27 71 339 4910",
+    buyerEmail: "tshepo@moloifleet.co.za",
+    preferredContact: "whatsapp",
+    status: "open",
+    quotesCount: 2,
+    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  }
+];
+
 // Lazy Gemini API Initializer
 let aiClient: any = null;
 function getAI() {
@@ -505,6 +599,129 @@ app.post("/api/sellers/:id/subscribe", (req, res) => {
     message: `Subscription activated successfully! You are now subscribed to Partssource ZA ${plan} plan.`,
     seller: sellers[sellerIndex]
   });
+});
+
+// 7. Part Sourcing Requests Endpoints
+app.get("/api/part-requests", (req, res) => {
+  let filtered = [...partRequests];
+  const { query, category, vehicleType, province, town, urgency, status } = req.query;
+
+  if (query) {
+    const q = String(query).toLowerCase();
+    filtered = filtered.filter(r =>
+      r.partName.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      r.vehicleMake.toLowerCase().includes(q) ||
+      r.vehicleModel.toLowerCase().includes(q) ||
+      (r.partNumber && r.partNumber.toLowerCase().includes(q))
+    );
+  }
+
+  if (category) {
+    filtered = filtered.filter(r => r.category === String(category));
+  }
+
+  if (vehicleType) {
+    filtered = filtered.filter(r => r.vehicleType === String(vehicleType) || r.vehicleType === 'Both');
+  }
+
+  if (province) {
+    filtered = filtered.filter(r => r.province.toLowerCase() === String(province).toLowerCase());
+  }
+
+  if (town) {
+    filtered = filtered.filter(r => r.town.toLowerCase() === String(town).toLowerCase());
+  }
+
+  if (urgency) {
+    filtered = filtered.filter(r => r.urgency === String(urgency));
+  }
+
+  if (status) {
+    filtered = filtered.filter(r => r.status === String(status));
+  }
+
+  // Sort newest first
+  filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  res.json(filtered);
+});
+
+app.post("/api/part-requests", (req, res) => {
+  const { 
+    partName, 
+    category, 
+    vehicleType, 
+    vehicleMake, 
+    vehicleModel, 
+    vehicleYear, 
+    engineCodeOrVin, 
+    partNumber, 
+    description, 
+    urgency, 
+    targetBudgetZar, 
+    province, 
+    town, 
+    buyerName, 
+    buyerPhone, 
+    buyerEmail, 
+    preferredContact 
+  } = req.body;
+
+  if (!partName || !category || !vehicleMake || !vehicleModel || !province || !town || !buyerName || !buyerPhone) {
+    return res.status(400).json({ error: "Missing required fields for part sourcing request." });
+  }
+
+  const newRequest: PartRequest = {
+    id: `req-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+    partName,
+    category,
+    vehicleType: vehicleType || 'Car',
+    vehicleMake,
+    vehicleModel,
+    vehicleYear,
+    engineCodeOrVin,
+    partNumber,
+    description: description || `Looking for ${partName} in good working condition.`,
+    urgency: urgency || 'standard',
+    targetBudgetZar: targetBudgetZar ? Number(targetBudgetZar) : undefined,
+    province,
+    town,
+    buyerName,
+    buyerPhone,
+    buyerEmail,
+    preferredContact: preferredContact || 'whatsapp',
+    status: 'open',
+    quotesCount: 0,
+    createdAt: new Date().toISOString()
+  };
+
+  partRequests.unshift(newRequest);
+  res.status(201).json(newRequest);
+});
+
+app.patch("/api/part-requests/:id/status", (req, res) => {
+  const index = partRequests.findIndex(r => r.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Part request not found." });
+  }
+
+  const { status } = req.body;
+  if (!status || !['open', 'quotes_received', 'fulfilled', 'closed'].includes(status)) {
+    return res.status(400).json({ error: "Invalid status value." });
+  }
+
+  partRequests[index].status = status;
+  res.json(partRequests[index]);
+});
+
+app.delete("/api/part-requests/:id", (req, res) => {
+  const index = partRequests.findIndex(r => r.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Part request not found." });
+  }
+
+  const removed = partRequests.splice(index, 1)[0];
+  res.json({ message: "Part request deleted successfully.", request: removed });
 });
 
 // 7. Delete listing

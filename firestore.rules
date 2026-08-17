@@ -43,6 +43,17 @@ service cloud.firestore {
         && data.email is string && data.email.size() <= 100;
     }
 
+    function isValidPartRequest(data) {
+      return data.partName is string && data.partName.size() <= 200
+        && data.category is string && data.category.size() <= 50
+        && data.vehicleMake is string && data.vehicleMake.size() <= 100
+        && data.vehicleModel is string && data.vehicleModel.size() <= 100
+        && data.province is string && data.province.size() <= 50
+        && data.town is string && data.town.size() <= 100
+        && data.buyerName is string && data.buyerName.size() <= 100
+        && data.buyerPhone is string && data.buyerPhone.size() <= 30;
+    }
+
     // Default deny catch-all
     match /{document=**} {
       allow read, write: if false;
@@ -52,6 +63,13 @@ service cloud.firestore {
     match /listings/{listingId} {
       allow read: if true;
       allow create: if isValidListing(incoming());
+      allow update, delete: if true;
+    }
+
+    // Customer & Buyer Part Sourcing Requests
+    match /part_requests/{requestId} {
+      allow read: if true;
+      allow create: if isValidPartRequest(incoming());
       allow update, delete: if true;
     }
 

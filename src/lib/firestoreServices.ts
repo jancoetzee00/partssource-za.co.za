@@ -24,7 +24,7 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from './firebase';
-import { PartListing, Seller, SubscriptionBankingDetails } from '../types';
+import { PartListing, Seller, SubscriptionBankingDetails, PartRequest } from '../types';
 
 export const DEFAULT_BANKING_DETAILS: SubscriptionBankingDetails = {
   bankName: "First National Bank (FNB)",
@@ -397,6 +397,185 @@ export async function deleteListingFromFirestore(listingId: string) {
   const path = `listings/${listingId}`;
   try {
     await deleteDoc(doc(db, 'listings', listingId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
+  }
+}
+
+// Initial Sample Part Sourcing Requests (South Africa Context)
+export const INITIAL_PART_REQUESTS: PartRequest[] = [
+  {
+    id: "req-101",
+    partName: "Toyota Hilux 2.8 GD-6 Automatic 4x4 Gearbox (Complete)",
+    category: "Gearboxes & Transmissions",
+    vehicleType: "Car",
+    vehicleMake: "Toyota",
+    vehicleModel: "Hilux",
+    vehicleYear: "2019",
+    engineCodeOrVin: "1GD-FTV (6-Speed Auto)",
+    partNumber: "35000-0K400",
+    description: "Urgent replacement needed for farm bakkie. Looking for complete low mileage auto transmission with torque converter in working condition with startup guarantee.",
+    urgency: "urgent",
+    targetBudgetZar: 28000,
+    province: "Gauteng",
+    town: "Pretoria",
+    buyerName: "Kobus Venter",
+    buyerPhone: "+27 82 492 1083",
+    buyerEmail: "kobus@venterboerdery.co.za",
+    preferredContact: "whatsapp",
+    status: "open",
+    quotesCount: 3,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "req-102",
+    partName: "Scania R480 / R500 Complete Rear Differential Assembly",
+    category: "Engines & Drivetrain",
+    vehicleType: "Truck",
+    vehicleMake: "Scania",
+    vehicleModel: "R480 Topline",
+    vehicleYear: "2015",
+    engineCodeOrVin: "R780 Ratio 2.92",
+    partNumber: "1778942",
+    description: "Fleet hauler broken down on N3 near Pietermaritzburg. Looking for clean OEM Scania differential carrier and crown wheel & pinion in good condition.",
+    urgency: "urgent",
+    targetBudgetZar: 45000,
+    province: "KwaZulu-Natal",
+    town: "Pietermaritzburg",
+    buyerName: "Devan Naidoo (Logistics Hub)",
+    buyerPhone: "+27 74 882 9104",
+    buyerEmail: "devan@coastallogistics.co.za",
+    preferredContact: "call",
+    status: "quotes_received",
+    quotesCount: 4,
+    createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "req-103",
+    partName: "Isuzu D-Max 3.0 D-Teq Turbocharger (IHI / OEM)",
+    category: "Engines & Drivetrain",
+    vehicleType: "Car",
+    vehicleMake: "Isuzu",
+    vehicleModel: "D-Max / KB300",
+    vehicleYear: "2020",
+    engineCodeOrVin: "4JJ1-TCX (3.0L Turbo Diesel)",
+    partNumber: "8981506872",
+    description: "Looking for new or tested second-hand turbocharger. Must have no shaft play and intact wastegate actuator.",
+    urgency: "standard",
+    targetBudgetZar: 8500,
+    province: "Western Cape",
+    town: "Paarl",
+    buyerName: "Johan Du Plessis",
+    buyerPhone: "+27 83 912 3341",
+    buyerEmail: "johan@duplessisauto.co.za",
+    preferredContact: "whatsapp",
+    status: "open",
+    quotesCount: 1,
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "req-104",
+    partName: "Mercedes-Benz Actros MP4 Front Bumper & Corner Panels",
+    category: "Body Panels & Bumpers",
+    vehicleType: "Truck",
+    vehicleMake: "Mercedes-Benz",
+    vehicleModel: "Actros 2645",
+    vehicleYear: "2018",
+    description: "Front left side collision damage. In search of OEM front bumper centre section, left corner spoiler, and step bracket. Prefer white finish if available.",
+    urgency: "flexible",
+    targetBudgetZar: 14000,
+    province: "Mpumalanga",
+    town: "Witbank",
+    buyerName: "Tshepo Moloi",
+    buyerPhone: "+27 71 339 4910",
+    buyerEmail: "tshepo@moloifleet.co.za",
+    preferredContact: "whatsapp",
+    status: "open",
+    quotesCount: 2,
+    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  }
+];
+
+/**
+ * Realtime Snapshot Listener for Part Sourcing Requests
+ */
+export function subscribeToPartRequests(callback: (requests: PartRequest[]) => void) {
+  const path = 'part_requests';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    async (snapshot) => {
+      if (snapshot.empty) {
+        // Seed default part requests if collection is brand new
+        callback(INITIAL_PART_REQUESTS);
+        for (const req of INITIAL_PART_REQUESTS) {
+          try {
+            await setDoc(doc(db, path, req.id), req, { merge: true });
+          } catch (e) {
+            console.warn('Initial part request seed notice:', e);
+          }
+        }
+      } else {
+        const items: PartRequest[] = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as Omit<PartRequest, 'id'>)
+        }));
+        // Sort newest first
+        items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        callback(items);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  );
+}
+
+/**
+ * Add a new Part Sourcing Request to Firestore
+ */
+export async function addPartRequestToFirestore(requestData: Omit<PartRequest, 'id'>): Promise<string> {
+  const path = 'part_requests';
+  try {
+    const docRef = await addDoc(collection(db, path), {
+      ...requestData,
+      status: requestData.status || 'open',
+      quotesCount: 0,
+      createdAt: requestData.createdAt || new Date().toISOString()
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    throw error;
+  }
+}
+
+/**
+ * Update status of a Part Request (e.g. 'open', 'quotes_received', 'fulfilled', 'closed')
+ */
+export async function updatePartRequestStatusInFirestore(
+  requestId: string, 
+  status: 'open' | 'quotes_received' | 'fulfilled' | 'closed'
+) {
+  const path = `part_requests/${requestId}`;
+  try {
+    const docRef = doc(db, 'part_requests', requestId);
+    await updateDoc(docRef, { status });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+    throw error;
+  }
+}
+
+/**
+ * Delete a Part Request from Firestore
+ */
+export async function deletePartRequestFromFirestore(requestId: string) {
+  const path = `part_requests/${requestId}`;
+  try {
+    await deleteDoc(doc(db, 'part_requests', requestId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
     throw error;
