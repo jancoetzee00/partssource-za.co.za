@@ -52,13 +52,19 @@ import {
   Sparkles,
   X,
   Globe,
-  Navigation
+  Navigation,
+  ChevronDown,
+  ChevronUp,
+  Layers
 } from "lucide-react";
 
 export default function App() {
   // Navigation & Views
   const [activeTab, setActiveTab] = useState<"browse" | "pricing" | "dashboard" | "seller-profile">("browse");
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+
+  // Mobile Accordion State
+  const [isMobileCategoryAccordionOpen, setIsMobileCategoryAccordionOpen] = useState<boolean>(false);
 
   // Web Search Engine State
   const [isWebSearchOpen, setIsWebSearchOpen] = useState<boolean>(false);
@@ -867,24 +873,174 @@ export default function App() {
                     </select>
                   </div>
                   
-                  {/* Mobile Filter Sheet Button */}
+                  {/* Mobile Accordion Toggle Button in Header */}
                   <div className="md:hidden">
                     <button 
-                      onClick={() => {
-                        const newCat = prompt(`Filter by Category (or cancel to view all):\n\n${categoriesList.join("\n")}`, selectedCategory || "");
-                        if (newCat !== null) {
-                          if (newCat.trim() === "") setSelectedCategory(null);
-                          else if (categoriesList.includes(newCat)) setSelectedCategory(newCat);
-                        }
-                      }}
-                      className="bg-slate-900 text-white p-2.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold"
+                      onClick={() => setIsMobileCategoryAccordionOpen(!isMobileCategoryAccordionOpen)}
+                      className={`p-2 sm:px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                        selectedCategory || isMobileCategoryAccordionOpen
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-900 text-white hover:bg-slate-800"
+                      }`}
+                      title="Toggle Category Filter Menu"
                     >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                      <span>Category</span>
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>{selectedCategory ? selectedCategory : "Categories"}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMobileCategoryAccordionOpen ? "rotate-180" : ""}`} />
                     </button>
                   </div>
                 </div>
               </header>
+
+              {/* MOBILE ACCORDION CATEGORY DROPDOWN PANEL (md:hidden) */}
+              <div className="md:hidden">
+                <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all">
+                  {/* Accordion Trigger Header */}
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileCategoryAccordionOpen(!isMobileCategoryAccordionOpen)}
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-50 transition-colors cursor-pointer"
+                    aria-expanded={isMobileCategoryAccordionOpen}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        selectedCategory ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"
+                      }`}>
+                        <Layers className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            {selectedCategory ? `Category: ${selectedCategory}` : "All Spare Part Categories"}
+                          </span>
+                          {selectedCategory && (
+                            <span className="bg-blue-100 text-blue-700 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full uppercase">
+                              Filtered
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {isMobileCategoryAccordionOpen ? "Tap to close category menu" : "Tap to browse all 10 part categories & fitments"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 text-slate-500 pl-2">
+                      <span className="text-[11px] font-bold text-blue-600">
+                        {isMobileCategoryAccordionOpen ? "Close" : "Browse"}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isMobileCategoryAccordionOpen ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+
+                  {/* Accordion Expandable Menu Body */}
+                  {isMobileCategoryAccordionOpen && (
+                    <div className="border-t border-slate-100 p-3.5 bg-slate-50/60 space-y-3.5 animate-fadeIn">
+                      {/* Top Action Bar in Accordion */}
+                      <div className="flex items-center justify-between px-0.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Select a Category ({categoriesList.length})
+                        </span>
+                        {selectedCategory && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(null);
+                              setIsMobileCategoryAccordionOpen(false);
+                            }}
+                            className="text-[11px] font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer"
+                          >
+                            Reset Category
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Categories Grid (2 Columns on mobile for quick tap navigation) */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* All Categories Option */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategory(null);
+                            setIsMobileCategoryAccordionOpen(false);
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
+                            selectedCategory === null
+                              ? "bg-blue-600 text-white border-blue-600 shadow-xs font-bold"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          <span className="truncate">All Categories</span>
+                          {selectedCategory === null && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        </button>
+
+                        {/* List of categories */}
+                        {categoriesList.map((cat) => {
+                          const isSelected = selectedCategory === cat;
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCategory(isSelected ? null : cat);
+                                setIsMobileCategoryAccordionOpen(false);
+                              }}
+                              className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
+                                isSelected
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-xs font-bold"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <span className="truncate mr-1">{cat}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Vehicle Fleet Type Quick Bar inside Accordion */}
+                      <div className="pt-2.5 border-t border-slate-200/80">
+                        <div className="flex items-center justify-between mb-1.5 px-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Vehicle Type Fitment:
+                          </span>
+                          {selectedVehicleType && (
+                            <button 
+                              onClick={() => setSelectedVehicleType(null)}
+                              className="text-[10px] text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5 text-xs">
+                          {[
+                            { label: "All Types", val: null },
+                            { label: "Trucks", val: "Truck" },
+                            { label: "Cars", val: "Car" }
+                          ].map((item) => {
+                            const isSel = selectedVehicleType === item.val;
+                            return (
+                              <button
+                                key={item.label}
+                                type="button"
+                                onClick={() => setSelectedVehicleType(item.val as any)}
+                                className={`py-1.5 px-2 rounded-lg border text-center font-bold text-xs transition-all cursor-pointer ${
+                                  isSel
+                                    ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                                }`}
+                              >
+                                {item.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Filtering indicators if active */}
               {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
