@@ -517,6 +517,28 @@ app.delete("/api/listings/:id", (req, res) => {
   res.json({ success: true, message: "Listing deleted successfully." });
 });
 
+// 7b. Delete seller and all associated listings (Cascade Delete)
+app.delete("/api/sellers/:id", (req, res) => {
+  const sellerIndex = sellers.findIndex(s => s.id === req.params.id);
+  if (sellerIndex === -1) {
+    return res.status(404).json({ error: "Seller not found" });
+  }
+
+  // Remove seller
+  sellers.splice(sellerIndex, 1);
+
+  // Cascade delete all listings associated with this seller
+  const initialListingsCount = listings.length;
+  listings = listings.filter(l => l.sellerId !== req.params.id);
+  const deletedListingsCount = initialListingsCount - listings.length;
+
+  res.json({
+    success: true,
+    message: `Seller and ${deletedListingsCount} associated listings deleted successfully.`,
+    deletedListingsCount
+  });
+});
+
 // 8. GEMINI API: Auto-generate listing descriptions for sellers
 app.post("/api/gemini/suggest-description", async (req, res) => {
   const { title, condition, vehicleModel, category } = req.body;

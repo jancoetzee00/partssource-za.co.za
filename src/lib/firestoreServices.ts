@@ -142,12 +142,37 @@ export async function saveSellerToFirestore(seller: Seller) {
 }
 
 /**
- * Delete Seller from Firestore
+ * Delete Seller and ALL associated listings from Firestore (Cascade Delete)
  */
-export async function deleteSellerFromFirestore(sellerId: string) {
+export async function deleteSellerFromFirestore(sellerId: string): Promise<{ deletedListingsCount: number }> {
   const path = `sellers/${sellerId}`;
   try {
+    let deletedCount = 0;
+
+    // 1. Query all listings associated with this sellerId
+    try {
+      const listingsRef = collection(db, 'listings');
+      const q = query(listingsRef, where('sellerId', '==', sellerId));
+      const snapshot = await getDocs(q);
+
+      // 2. Delete each listing document
+      const deletePromises = snapshot.docs.map(async (docSnap) => {
+        try {
+          await deleteDoc(doc(db, 'listings', docSnap.id));
+          deletedCount++;
+        } catch (listingErr) {
+          console.warn(`Failed to delete listing ${docSnap.id} for seller ${sellerId}:`, listingErr);
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (queryErr) {
+      console.warn('Error querying listings for seller cascade delete:', queryErr);
+    }
+
+    // 3. Delete the seller document from 'sellers' collection
     await deleteDoc(doc(db, 'sellers', sellerId));
+
+    return { deletedListingsCount: deletedCount };
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
     throw error;

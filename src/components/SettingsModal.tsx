@@ -213,9 +213,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleDeleteSellerConfirm = async (sellerId: string) => {
     try {
-      await deleteSellerFromFirestore(sellerId);
-      setSellerActionNotice("Seller deleted successfully from subscription records.");
-      setTimeout(() => setSellerActionNotice(null), 3500);
+      const res = await deleteSellerFromFirestore(sellerId);
+      const notice = res.deletedListingsCount > 0
+        ? `Seller and ${res.deletedListingsCount} associated part listing${res.deletedListingsCount === 1 ? '' : 's'} deleted successfully.`
+        : "Seller deleted successfully from subscription records.";
+      setSellerActionNotice(notice);
+      setTimeout(() => setSellerActionNotice(null), 4500);
       setDeletingSellerId(null);
     } catch (err: any) {
       console.error("Delete seller error:", err);
@@ -1046,9 +1049,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-slate-900">Delete Seller Record?</h3>
+              <h3 className="text-base font-bold text-slate-900">Delete Seller & All Listings?</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Are you sure you want to remove this seller from the subscription database? This action cannot be undone.
+                Are you sure you want to remove this seller? <span className="font-semibold text-red-600">All spare part listings posted by this seller will also be permanently deleted</span> from the marketplace. This action cannot be undone.
               </p>
             </div>
 
