@@ -16,6 +16,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { WebSearchEngineModal } from "./components/WebSearchEngineModal";
 import { RequestPartModal } from "./components/RequestPartModal";
 import { PartRequestsView } from "./components/PartRequestsView";
+import { EftPaymentModal } from "./components/EftPaymentModal";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
@@ -58,7 +59,8 @@ import {
   Navigation,
   ChevronDown,
   ChevronUp,
-  Layers
+  Layers,
+  Building2
 } from "lucide-react";
 
 export default function App() {
@@ -70,6 +72,23 @@ export default function App() {
   const [partRequests, setPartRequests] = useState<PartRequest[]>([]);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState<boolean>(false);
   const [initialRequestQuery, setInitialRequestQuery] = useState<string>("");
+
+  // EFT Payment Modal State
+  const [isEftModalOpen, setIsEftModalOpen] = useState<boolean>(false);
+  const [eftModalPurpose, setEftModalPurpose] = useState<"subscription" | "part_purchase" | "general">("subscription");
+  const [eftModalAmount, setEftModalAmount] = useState<number | undefined>(undefined);
+  const [eftModalRef, setEftModalRef] = useState<string | undefined>(undefined);
+
+  const handleOpenEftModal = (
+    purpose: "subscription" | "part_purchase" | "general" = "subscription", 
+    amount?: number, 
+    ref?: string
+  ) => {
+    setEftModalPurpose(purpose);
+    setEftModalAmount(amount);
+    setEftModalRef(ref);
+    setIsEftModalOpen(true);
+  };
 
   // Mobile Accordion State
   const [isMobileCategoryAccordionOpen, setIsMobileCategoryAccordionOpen] = useState<boolean>(false);
@@ -590,6 +609,17 @@ export default function App() {
             }`}
           >
             Pricing
+          </button>
+
+          {/* EFT Payments Link / Gateway */}
+          <button
+            onClick={() => handleOpenEftModal("subscription")}
+            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+            title="View verified SA EFT Banking details, bank app links & payment slip"
+          >
+            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">EFT Payments</span>
+            <span className="sm:hidden">EFT</span>
           </button>
 
           {/* Owner Settings: Only visible on local / dev app */}
@@ -1469,6 +1499,33 @@ export default function App() {
 
               </div>
 
+              {/* EFT Direct Bank Transfer & Banking Slip Banner */}
+              <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-800/80 text-emerald-100 rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm">
+                <div className="space-y-1.5 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                    <span className="bg-emerald-400 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                      0% Processing Fees
+                    </span>
+                    <span className="text-xs font-bold text-emerald-300">
+                      Direct South African Bank EFT Transfer
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-white">
+                    Need our official EFT banking details or payment slip?
+                  </h4>
+                  <p className="text-xs text-emerald-200/90 max-w-xl leading-relaxed">
+                    Pay subscriptions or spares deposits securely via FNB, Standard Bank, Capitec, Nedbank, Absa, Discovery, or TymeBank. Generate your official printable banking slip or upload Proof of Payment via WhatsApp.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleOpenEftModal("subscription", 499)}
+                  className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs px-5 py-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 hover:scale-[1.02] w-full md:w-auto"
+                >
+                  <Building2 className="w-4 h-4 text-slate-950" />
+                  <span>View EFT Banking Details & Slip</span>
+                </button>
+              </div>
+
               {/* Secure Transaction Note */}
               <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50 border border-slate-100 p-4 rounded-xl text-xs text-slate-500 max-w-xl mx-auto text-center sm:text-left">
                 <ShieldCheck className="w-8 h-8 text-blue-600 shrink-0" />
@@ -1638,6 +1695,7 @@ export default function App() {
                 sellerListings={seller ? listings.filter(l => l.sellerId === seller.id) : []}
                 bankingDetails={bankingDetails}
                 onOpenSettings={() => setIsSettingsOpen(true)}
+                onOpenEftModal={handleOpenEftModal}
               />
             </div>
           )}
@@ -1661,9 +1719,21 @@ export default function App() {
               <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
               <span>Listed Spares: {listedItemsCount.toLocaleString("en-ZA")}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Market Live</span>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleOpenEftModal("general")}
+                className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
+                title="View South African EFT Banking Details, Bank Links & POP submission"
+              >
+                <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>EFT Banking & POP</span>
+              </button>
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Market Live</span>
+              </div>
             </div>
           </footer>
 
@@ -1695,6 +1765,7 @@ export default function App() {
             setActiveTab("seller-profile");
           }}
           onOpenWebSearch={(q, prov, town) => handleOpenWebSearch(q, prov, town)}
+          onOpenEftModal={handleOpenEftModal}
         />
       )}
 
@@ -1785,6 +1856,17 @@ export default function App() {
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
         initialPartQuery={initialRequestQuery}
+      />
+
+      {/* EFT PAYMENT & BANKING DETAILS MODAL */}
+      <EftPaymentModal
+        isOpen={isEftModalOpen}
+        onClose={() => setIsEftModalOpen(false)}
+        bankingDetails={bankingDetails}
+        initialPurpose={eftModalPurpose}
+        initialAmountZar={eftModalAmount}
+        initialReference={eftModalRef}
+        sellerBusinessName={seller?.businessName || seller?.name}
       />
 
       {/* APP OWNER PASSWORD PROTECTED SETTINGS MODAL */}

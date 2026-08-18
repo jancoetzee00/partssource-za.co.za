@@ -47,6 +47,7 @@ interface SellerDashboardProps {
   sellerListings: PartListing[];
   bankingDetails?: SubscriptionBankingDetails;
   onOpenSettings?: () => void;
+  onOpenEftModal?: (purpose?: "subscription" | "part_purchase" | "general", amount?: number, ref?: string) => void;
 }
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = ({
@@ -56,7 +57,8 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   setSeller,
   sellerListings,
   bankingDetails,
-  onOpenSettings
+  onOpenSettings,
+  onOpenEftModal
 }) => {
   // Auth Form State
   const [email, setEmail] = useState("");
@@ -706,8 +708,23 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-3 rounded-xl">
-                    <p className="font-bold mb-1">EFT Activation Instructions:</p>
+                  <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-3 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold">EFT Activation Instructions:</p>
+                      {onOpenEftModal && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const refStr = `SUB-${seller.businessName ? seller.businessName.replace(/\s+/g, '').toUpperCase() : seller.name.replace(/\s+/g, '').toUpperCase()}`;
+                            onOpenEftModal("subscription", getPlanPrice(selectedPlan), refStr);
+                          }}
+                          className="text-[11px] font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 underline cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Open Bank Links & Slip</span>
+                        </button>
+                      )}
+                    </div>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
                       Please transfer <strong className="font-bold text-amber-950">R{getPlanPrice(selectedPlan)}.00</strong> using the reference code above. Click "Confirm EFT Transfer Sent" to notify billing.
                     </p>
@@ -1151,6 +1168,20 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                   <FileText className="w-3.5 h-3.5 text-slate-400" />
                   <span>View Tax Invoice Details</span>
                 </button>
+
+                {onOpenEftModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const refStr = `SUB-${seller.businessName ? seller.businessName.replace(/\s+/g, '').toUpperCase() : seller.name.replace(/\s+/g, '').toUpperCase()}`;
+                      onOpenEftModal("subscription", getPlanPrice(seller.subscription.plan as any), refStr);
+                    }}
+                    className="w-full bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 py-2 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Official EFT Banking & POP Link</span>
+                  </button>
+                )}
               </div>
             </div>
 

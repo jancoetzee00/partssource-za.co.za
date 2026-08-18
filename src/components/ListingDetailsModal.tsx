@@ -5,20 +5,22 @@
 
 import React, { useState } from "react";
 import { PartListing } from "../types";
-import { X, MapPin, Phone, Mail, CheckCircle, MessageSquare, ShieldCheck, Info, Sparkles, AlertCircle, Loader2, Globe, Search } from "lucide-react";
+import { X, MapPin, Phone, Mail, CheckCircle, MessageSquare, ShieldCheck, Info, Sparkles, AlertCircle, Loader2, Globe, Search, Building2 } from "lucide-react";
 
 interface ListingDetailsModalProps {
   listing: PartListing;
   onClose: () => void;
   onViewSellerProfile?: (sellerId: string) => void;
   onOpenWebSearch?: (query: string, province?: string, town?: string) => void;
+  onOpenEftModal?: (purpose?: "subscription" | "part_purchase" | "general", amount?: number, ref?: string) => void;
 }
 
 export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ 
   listing, 
   onClose, 
   onViewSellerProfile,
-  onOpenWebSearch
+  onOpenWebSearch,
+  onOpenEftModal
 }) => {
   const [activeTab, setActiveTab] = useState<"phone" | "message">("phone");
   
@@ -269,6 +271,20 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                     <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
                     <span>This advertiser is fully subscribed and holds an verified contact number. Always trade in daylight hours.</span>
                   </div>
+
+                  {onOpenEftModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cleanTitle = listing.title.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase();
+                        onOpenEftModal("part_purchase", listing.price, `PART-${cleanTitle}`);
+                      }}
+                      className="w-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-slate-700 text-[11px] font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>View Official EFT Banking Details for Payment</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="animate-fade-in">
