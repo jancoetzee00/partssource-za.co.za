@@ -106,3 +106,42 @@ export interface PartRequest {
   createdAt: string;
   userId?: string;
 }
+
+export interface ProofOfPayment {
+  id: string;
+  reference: string;
+  amount: number;
+  purpose: 'subscription' | 'part_purchase' | 'general';
+  payerName: string;
+  payerContact: string;
+  payerNotes?: string;
+  bankPaidFrom?: string;
+  fileName: string;
+  fileSize?: string;
+  fileDataUrl?: string;
+  fileType?: string;
+  targetSellerId?: string;
+  targetSellerName?: string;
+  listingId?: string;
+  listingTitle?: string;
+  status: 'pending_verification' | 'verified' | 'rejected';
+  createdAt: string;
+}
+
+export interface SellerNotification {
+  id: string;
+  sellerId: string;
+  title: string;
+  message: string;
+  type: 'payment_proof' | 'part_request' | 'inquiry' | 'subscription';
+  relatedId?: string;
+  amount?: number;
+  reference?: string;
+  fileDataUrl?: string;
+  fileName?: string;
+  read: boolean;
+  createdAt: string;
+  payerName?: string;
+  payerContact?: string;
+}
+

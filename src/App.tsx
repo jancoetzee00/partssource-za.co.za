@@ -78,15 +78,27 @@ export default function App() {
   const [eftModalPurpose, setEftModalPurpose] = useState<"subscription" | "part_purchase" | "general">("subscription");
   const [eftModalAmount, setEftModalAmount] = useState<number | undefined>(undefined);
   const [eftModalRef, setEftModalRef] = useState<string | undefined>(undefined);
+  const [eftTargetSellerId, setEftTargetSellerId] = useState<string | undefined>(undefined);
+  const [eftTargetSellerName, setEftTargetSellerName] = useState<string | undefined>(undefined);
+  const [eftTargetListingId, setEftTargetListingId] = useState<string | undefined>(undefined);
+  const [eftTargetListingTitle, setEftTargetListingTitle] = useState<string | undefined>(undefined);
 
   const handleOpenEftModal = (
     purpose: "subscription" | "part_purchase" | "general" = "subscription", 
     amount?: number, 
-    ref?: string
+    ref?: string,
+    targetSellerId?: string,
+    targetSellerName?: string,
+    targetListingId?: string,
+    targetListingTitle?: string
   ) => {
     setEftModalPurpose(purpose);
     setEftModalAmount(amount);
     setEftModalRef(ref);
+    setEftTargetSellerId(targetSellerId);
+    setEftTargetSellerName(targetSellerName);
+    setEftTargetListingId(targetListingId);
+    setEftTargetListingTitle(targetListingTitle);
     setIsEftModalOpen(true);
   };
 
@@ -1866,6 +1878,10 @@ export default function App() {
         initialPurpose={eftModalPurpose}
         initialAmountZar={eftModalAmount}
         initialReference={eftModalRef}
+        targetSellerId={eftTargetSellerId}
+        targetSellerName={eftTargetSellerName}
+        targetListingId={eftTargetListingId}
+        targetListingTitle={eftTargetListingTitle}
         sellerBusinessName={seller?.businessName || seller?.name}
       />
 

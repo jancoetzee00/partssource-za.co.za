@@ -12,7 +12,15 @@ interface ListingDetailsModalProps {
   onClose: () => void;
   onViewSellerProfile?: (sellerId: string) => void;
   onOpenWebSearch?: (query: string, province?: string, town?: string) => void;
-  onOpenEftModal?: (purpose?: "subscription" | "part_purchase" | "general", amount?: number, ref?: string) => void;
+  onOpenEftModal?: (
+    purpose?: "subscription" | "part_purchase" | "general", 
+    amount?: number, 
+    ref?: string,
+    targetSellerId?: string,
+    targetSellerName?: string,
+    targetListingId?: string,
+    targetListingTitle?: string
+  ) => void;
 }
 
 export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ 
@@ -277,12 +285,20 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                       type="button"
                       onClick={() => {
                         const cleanTitle = listing.title.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase();
-                        onOpenEftModal("part_purchase", listing.price, `PART-${cleanTitle}`);
+                        onOpenEftModal(
+                          "part_purchase", 
+                          listing.price, 
+                          `PART-${cleanTitle}`,
+                          listing.sellerId,
+                          listing.sellerName,
+                          listing.id,
+                          listing.title
+                        );
                       }}
                       className="w-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-slate-700 text-[11px] font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>View Official EFT Banking Details for Payment</span>
+                      <span>EFT Banking Details & Upload Proof of Payment</span>
                     </button>
                   )}
                 </div>

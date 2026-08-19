@@ -24,7 +24,7 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from './firebase';
-import { PartListing, Seller, SubscriptionBankingDetails, PartRequest } from '../types';
+import { PartListing, Seller, SubscriptionBankingDetails, PartRequest, ProofOfPayment, SellerNotification } from '../types';
 
 export const DEFAULT_BANKING_DETAILS: SubscriptionBankingDetails = {
   bankName: "First National Bank (FNB)",
@@ -581,3 +581,136 @@ export async function deletePartRequestFromFirestore(requestId: string) {
     throw error;
   }
 }
+
+/**
+ * Submit Proof of Payment to Firestore and automatically notify the seller
+ */
+export async function submitProofOfPaymentToFirestore(
+  popData: Omit<ProofOfPayment, 'id'>
+): Promise<{ popId: string; notificationId?: string }> {
+  const popPath = 'payment_proofs';
+  try {
+    const popDocRef = await addDoc(collection(db, popPath), {
+      ...popData,
+      status: popData.status || 'pending_verification',
+      createdAt: popData.createdAt || new Date().toISOString()
+    });
+
+    const popId = popDocRef.id;
+    let notificationId: string | undefined = undefined;
+
+    // Send direct system notification to the seller (or 'admin' if subscription)
+    const targetRecipientId = popData.targetSellerId || (popData.purpose === 'subscription' ? 'admin' : 'all');
+    const notificationPath = 'notifications';
+
+    try {
+      const notifTitle = popData.purpose === 'subscription'
+        ? `New Subscription POP Received (R${popData.amount.toLocaleString("en-ZA")})`
+        : popData.purpose === 'part_purchase'
+          ? `New Payment Slip for ${popData.listingTitle || 'Spare Part'} (R${popData.amount.toLocaleString("en-ZA")})`
+          : `New EFT Payment Slip (Ref: ${popData.reference})`;
+
+      const notifMessage = `${popData.payerName} (${popData.payerContact}) uploaded Proof of Payment [${popData.fileName}] for Ref: ${popData.reference} amounting to R${popData.amount.toLocaleString("en-ZA")}.`;
+
+      const notifDocRef = await addDoc(collection(db, notificationPath), {
+        sellerId: targetRecipientId,
+        title: notifTitle,
+        message: notifMessage,
+        type: 'payment_proof',
+        relatedId: popId,
+        amount: popData.amount,
+        reference: popData.reference,
+        fileDataUrl: popData.fileDataUrl || '',
+        fileName: popData.fileName,
+        read: false,
+        payerName: popData.payerName,
+        payerContact: popData.payerContact,
+        createdAt: new Date().toISOString()
+      });
+      notificationId = notifDocRef.id;
+    } catch (notifErr) {
+      console.warn("Notice: Notification record dispatch warning:", notifErr);
+    }
+
+    return { popId, notificationId };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, popPath);
+    throw error;
+  }
+}
+
+/**
+ * Realtime listener for Seller Notifications
+ */
+export function subscribeToSellerNotifications(
+  sellerId: string, 
+  callback: (notifications: SellerNotification[]) => void
+) {
+  const path = 'notifications';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items: SellerNotification[] = [];
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data() as Omit<SellerNotification, 'id'>;
+        // Include notifications designated for this seller, 'all', or 'admin' if seller is admin/matching
+        if (
+          data.sellerId === sellerId || 
+          data.sellerId === 'all' || 
+          (sellerId === 'admin' && data.sellerId === 'admin')
+        ) {
+          items.push({
+            id: docSnap.id,
+            ...data
+          });
+        }
+      });
+      // Sort newest first
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      callback(items);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  );
+}
+
+/**
+ * Mark a Notification as Read
+ */
+export async function markNotificationAsReadInFirestore(notificationId: string) {
+  const path = `notifications/${notificationId}`;
+  try {
+    const docRef = doc(db, 'notifications', notificationId);
+    await updateDoc(docRef, { read: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+    throw error;
+  }
+}
+
+/**
+ * Realtime listener for Proof of Payment Submissions
+ */
+export function subscribeToPaymentProofs(callback: (proofs: ProofOfPayment[]) => void) {
+  const path = 'payment_proofs';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items: ProofOfPayment[] = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...(docSnap.data() as Omit<ProofOfPayment, 'id'>)
+      }));
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      callback(items);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  );
+}
+

@@ -54,9 +54,38 @@ service cloud.firestore {
         && data.buyerPhone is string && data.buyerPhone.size() <= 30;
     }
 
+    function isValidProofOfPayment(data) {
+      return data.reference is string && data.reference.size() <= 100
+        && data.amount is number && data.amount >= 0
+        && data.payerName is string && data.payerName.size() <= 100
+        && data.payerContact is string && data.payerContact.size() <= 100
+        && data.fileName is string && data.fileName.size() <= 200;
+    }
+
+    function isValidNotification(data) {
+      return data.sellerId is string && data.sellerId.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.message is string && data.message.size() <= 2000
+        && data.type is string && data.type.size() <= 50;
+    }
+
     // Default deny catch-all
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // Proof of Payment Uploads
+    match /payment_proofs/{popId} {
+      allow read: if true;
+      allow create: if isValidProofOfPayment(incoming());
+      allow update, delete: if true;
+    }
+
+    // Seller and System Notifications
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create: if isValidNotification(incoming());
+      allow update, delete: if true;
     }
 
     // Public Marketplace Listings

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { Seller, PartListing, SubscriptionBankingDetails } from "../types";
+import { Seller, PartListing, SubscriptionBankingDetails, SellerNotification } from "../types";
 import { 
   Plus, 
   Sparkles, 
@@ -33,9 +33,18 @@ import {
   X,
   ExternalLink,
   Shield,
-  FileCheck
+  FileCheck,
+  Bell,
+  BellRing,
+  UploadCloud,
+  Eye,
+  MessageSquare
 } from "lucide-react";
-import { signInWithGoogle } from "../lib/firestoreServices";
+import { 
+  signInWithGoogle, 
+  subscribeToSellerNotifications, 
+  markNotificationAsReadInFirestore 
+} from "../lib/firestoreServices";
 import { downloadSubscriptionInvoicePdf } from "../lib/generateInvoicePdf";
 import { SA_PROVINCES, getTownsForProvince } from "../data/saLocations";
 
@@ -123,6 +132,31 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   });
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [downloadSuccessNotice, setDownloadSuccessNotice] = useState<string | null>(null);
+
+  // Live Seller Notifications & Proof of Payments State
+  const [notifications, setNotifications] = useState<SellerNotification[]>([]);
+  const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
+  const [selectedPopDoc, setSelectedPopDoc] = useState<SellerNotification | null>(null);
+
+  // Subscribe to Seller Notifications from Firestore
+  React.useEffect(() => {
+    if (!seller?.id) return;
+    const unsub = subscribeToSellerNotifications(seller.id, (items) => {
+      setNotifications(items);
+    });
+    return () => unsub();
+  }, [seller?.id]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleMarkAsRead = async (notifId: string) => {
+    try {
+      await markNotificationAsReadInFirestore(notifId);
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    } catch (err) {
+      console.warn("Failed to mark notification as read:", err);
+    }
+  };
 
   const getPastMonthsList = () => {
     const months: { label: string; value: string }[] = [];
@@ -451,6 +485,25 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Direct Notifications & Proof of Payments Indicator */}
+          <button
+            onClick={() => setShowNotificationsDrawer(!showNotificationsDrawer)}
+            className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
+              unreadCount > 0 
+                ? "bg-amber-500 text-slate-950 shadow-md animate-pulse" 
+                : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+            }`}
+            title="View Buyer Proof of Payments & System Notifications"
+          >
+            <Bell className={`w-3.5 h-3.5 ${unreadCount > 0 ? "text-slate-950" : "text-amber-400"}`} />
+            <span>Buyer POPs</span>
+            {unreadCount > 0 && (
+              <span className="bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
           {seller.subscription.active && (
             <button
               onClick={() => setShowInvoiceModal(true)}
@@ -492,6 +545,188 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
           )}
         </div>
       </div>
+
+      {/* Notifications & Proof of Payments Banner Drawer */}
+      {(showNotificationsDrawer || unreadCount > 0) && (
+        <div className="bg-white border-2 border-amber-400/80 rounded-2xl p-5 shadow-lg space-y-4 animate-scale-in">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+                <BellRing className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <span>Buyer Proof of Payments & Inbound Alerts</span>
+                  {unreadCount > 0 && (
+                    <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {unreadCount} New Unread
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Direct notifications received when buyers submit bank EFT payment slips
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowNotificationsDrawer(false)}
+              className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {notifications.length === 0 ? (
+            <div className="text-center py-6 text-slate-400 text-xs">
+              No proof of payment slips or notifications yet. When buyers upload EFT slips for your parts or inquiries, they will appear here instantly.
+            </div>
+          ) : (
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              {notifications.map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                    !notif.read 
+                      ? "bg-amber-50/70 border-amber-300" 
+                      : "bg-slate-50/60 border-slate-200"
+                  }`}
+                >
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-xs text-slate-900">
+                        {notif.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(notif.createdAt).toLocaleString("en-ZA")}
+                      </span>
+                      {!notif.read && (
+                        <span className="bg-amber-200 text-amber-900 text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {notif.message}
+                    </p>
+                    {notif.reference && (
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+                        <span>Ref: <strong>{notif.reference}</strong></span>
+                        {notif.amount && (
+                          <span className="text-emerald-700 font-bold">
+                            Amount: R{notif.amount.toLocaleString("en-ZA")}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {notif.fileDataUrl && (
+                      <button
+                        onClick={() => setSelectedPopDoc(notif)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View POP Slip</span>
+                      </button>
+                    )}
+
+                    {notif.payerContact && (
+                      <a
+                        href={`https://wa.me/${notif.payerContact.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors shadow-2xs"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Reply WhatsApp</span>
+                      </a>
+                    )}
+
+                    {!notif.read && (
+                      <button
+                        onClick={() => handleMarkAsRead(notif.id)}
+                        className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Mark Read
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* POP Document Viewer Modal */}
+      {selectedPopDoc && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">{selectedPopDoc.title}</h3>
+                  <p className="text-xs text-slate-500">
+                    Payer: {selectedPopDoc.payerName} • Ref: {selectedPopDoc.reference}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPopDoc(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-100 rounded-2xl p-4 flex items-center justify-center max-h-[60vh] overflow-auto">
+              {selectedPopDoc.fileDataUrl?.startsWith("data:application/pdf") ? (
+                <div className="text-center space-y-3 py-6">
+                  <FileText className="w-16 h-16 text-rose-500 mx-auto" />
+                  <p className="text-xs font-bold text-slate-800">{selectedPopDoc.fileName || "ProofOfPayment.pdf"}</p>
+                  <a
+                    href={selectedPopDoc.fileDataUrl}
+                    download={selectedPopDoc.fileName || "ProofOfPayment.pdf"}
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-xs"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download PDF Document</span>
+                  </a>
+                </div>
+              ) : selectedPopDoc.fileDataUrl ? (
+                <img
+                  src={selectedPopDoc.fileDataUrl}
+                  alt="Proof of Payment Slip"
+                  className="max-h-[50vh] max-w-full rounded-xl object-contain border border-slate-200 shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="text-slate-400 text-xs">No preview available for this document.</div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-xs text-slate-500">
+                Contact: <strong>{selectedPopDoc.payerContact || "N/A"}</strong>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleMarkAsRead(selectedPopDoc.id);
+                    setSelectedPopDoc(null);
+                  }}
+                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                >
+                  Confirm & Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Download Success Notice */}
       {downloadSuccessNotice && (

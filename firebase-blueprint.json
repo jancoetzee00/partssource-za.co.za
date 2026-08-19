@@ -101,9 +101,63 @@
       "properties": {
         "status": { "type": "string" }
       }
+    },
+    "ProofOfPayment": {
+      "title": "Proof of Payment",
+      "description": "Uploaded proof of payment for EFT transfers with seller notification",
+      "type": "object",
+      "properties": {
+        "reference": { "type": "string", "maxLength": 100 },
+        "amount": { "type": "number" },
+        "purpose": { "type": "string", "enum": ["subscription", "part_purchase", "general"] },
+        "payerName": { "type": "string", "maxLength": 100 },
+        "payerContact": { "type": "string", "maxLength": 100 },
+        "payerNotes": { "type": "string", "maxLength": 1000 },
+        "bankPaidFrom": { "type": "string", "maxLength": 50 },
+        "fileName": { "type": "string", "maxLength": 200 },
+        "fileSize": { "type": "string", "maxLength": 50 },
+        "fileDataUrl": { "type": "string" },
+        "fileType": { "type": "string", "maxLength": 50 },
+        "targetSellerId": { "type": "string", "maxLength": 128 },
+        "targetSellerName": { "type": "string", "maxLength": 100 },
+        "listingId": { "type": "string", "maxLength": 128 },
+        "listingTitle": { "type": "string", "maxLength": 200 },
+        "status": { "type": "string", "enum": ["pending_verification", "verified", "rejected"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["reference", "amount", "payerName", "payerContact", "fileName"]
+    },
+    "SellerNotification": {
+      "title": "Seller Notification",
+      "description": "Realtime notification sent to seller or system upon POP upload or request quote",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "message": { "type": "string", "maxLength": 2000 },
+        "type": { "type": "string", "enum": ["payment_proof", "part_request", "inquiry", "subscription"] },
+        "relatedId": { "type": "string", "maxLength": 128 },
+        "amount": { "type": "number" },
+        "reference": { "type": "string", "maxLength": 100 },
+        "fileDataUrl": { "type": "string" },
+        "fileName": { "type": "string", "maxLength": 200 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "payerName": { "type": "string", "maxLength": 100 },
+        "payerContact": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["sellerId", "title", "message", "type"]
     }
   },
   "firestore": {
+    "/payment_proofs/{popId}": {
+      "schema": { "$ref": "#/entities/ProofOfPayment" },
+      "description": "Uploaded proof of payment records"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/SellerNotification" },
+      "description": "Direct notifications for sellers and admin"
+    },
     "/listings/{listingId}": {
       "schema": { "$ref": "#/entities/PartListing" },
       "description": "Public marketplace listings for spare parts"
