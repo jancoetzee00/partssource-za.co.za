@@ -17,6 +17,7 @@ import { WebSearchEngineModal } from "./components/WebSearchEngineModal";
 import { RequestPartModal } from "./components/RequestPartModal";
 import { PartRequestsView } from "./components/PartRequestsView";
 import { EftPaymentModal } from "./components/EftPaymentModal";
+import { DesktopDownloadModal } from "./components/DesktopDownloadModal";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
@@ -60,7 +61,12 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  Building2
+  Building2,
+  Filter,
+  Star,
+  Monitor,
+  Download,
+  Laptop
 } from "lucide-react";
 
 export default function App() {
@@ -72,6 +78,32 @@ export default function App() {
   const [partRequests, setPartRequests] = useState<PartRequest[]>([]);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState<boolean>(false);
   const [initialRequestQuery, setInitialRequestQuery] = useState<string>("");
+
+  // Desktop App Installation & PWA State
+  const [isDesktopModalOpen, setIsDesktopModalOpen] = useState<boolean>(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
+
+  // Listen for browser PWA beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
 
   // EFT Payment Modal State
   const [isEftModalOpen, setIsEftModalOpen] = useState<boolean>(false);
@@ -509,25 +541,40 @@ export default function App() {
   };
 
   return (
-    <div className="bg-[#F3F4F6] w-full min-h-screen overflow-hidden flex flex-col font-sans text-slate-900 tracking-tight">
+    <div className="bg-[#f8fafc] w-full min-h-screen overflow-hidden flex flex-col font-sans text-slate-900 tracking-tight selection:bg-blue-600 selection:text-white">
       {/* Top Header Navigation */}
-      <nav className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 lg:px-8 flex-shrink-0 z-30">
+      <nav className="glass-panel sticky top-0 border-b border-slate-200/90 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-30 shadow-2xs">
         {/* Left Brand Container */}
         <div 
-          className="flex items-center gap-2 cursor-pointer"
+          className="flex items-center gap-3 cursor-pointer group shrink-0"
           onClick={() => { setActiveTab("browse"); clearAllFilters(); }}
         >
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-            <div className="w-4 h-4 border-2 border-white rotate-45"></div>
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl flex items-center justify-center shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-4 h-4 border-2 border-white rotate-45 flex items-center justify-center">
+              <div className="w-1.5 h-1.5 bg-amber-400 rotate-45"></div>
+            </div>
           </div>
-          <span className="text-xl font-bold tracking-tighter uppercase">
-            Partssource<span className="text-blue-600">ZA</span>
-          </span>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
+              <span className="text-lg font-black tracking-tight text-slate-900 font-display">
+                PARTSSOURCE
+              </span>
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-2xs">
+                .ZA
+              </span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase hidden sm:block">
+              SA Heavy & Auto Spares Network
+            </span>
+          </div>
         </div>
 
         {/* Dynamic Navigation Search (only visible on browse view) */}
-        <div className={`flex-1 max-w-xl px-4 lg:px-10 transition-all ${activeTab === "browse" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+        <div className={`flex-1 max-w-xl px-2 sm:px-6 lg:px-8 transition-all ${activeTab === "browse" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
           <div className="relative flex items-center">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+              <Search className="w-4 h-4" />
+            </div>
             <input 
               type="text" 
               value={searchQuery}
@@ -537,87 +584,84 @@ export default function App() {
                   handleOpenWebSearch(searchQuery);
                 }
               }}
-              placeholder="Search truck & car parts, OEM codes, or press Enter for Live Web..." 
-              className="w-full bg-slate-100 border border-slate-200/80 rounded-full py-2 pl-10 pr-24 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 placeholder-slate-400 shadow-2xs"
+              placeholder="Search truck & car spares, OEM part #, engine code..." 
+              className="w-full bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 rounded-full py-2 pl-9.5 pr-28 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 placeholder-slate-400 shadow-inner"
             />
-            <div className="absolute left-3.5 top-2.5 opacity-40 text-slate-500">
-              <Search className="w-4 h-4" />
-            </div>
-            <div className="absolute right-2 flex items-center gap-1">
+            <div className="absolute right-1.5 flex items-center gap-1">
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery("")}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold px-1"
+                  className="text-[11px] text-slate-400 hover:text-slate-600 font-bold px-1.5 cursor-pointer"
                 >
-                  Clear
+                  ✕
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => handleOpenWebSearch(searchQuery)}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-1 rounded-full flex items-center gap-1 shadow-xs transition-all cursor-pointer"
                 title="Search live automotive web & scrap yards with AI Grounding"
               >
                 <Globe className="w-3 h-3" />
-                <span className="hidden sm:inline">Web Search</span>
+                <span className="hidden md:inline">AI Web</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Right Nav Options */}
-        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3">
           {/* Direct "Request a Part" Action Button */}
           <button
             onClick={() => {
               setInitialRequestQuery(searchQuery || "");
               setIsRequestModalOpen(true);
             }}
-            className="bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs font-black px-3 sm:px-4 py-2 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 shrink-0"
             title="Broadcast hard-to-find part request to 450+ scrapyards"
           >
-            <PlusCircle className="w-3.5 h-3.5 text-slate-950" />
-            <span>Request a Part</span>
+            <PlusCircle className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
+            <span className="hidden sm:inline">Request Part</span>
+            <span className="sm:hidden">Request</span>
           </button>
 
-          <button 
-            onClick={() => handleOpenWebSearch()}
-            className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hidden sm:flex"
-            title="Launch South Africa Parts Web Search Engine"
-          >
-            <Globe className="w-3.5 h-3.5 text-blue-600" />
-            <span>Web Search</span>
-            <span className="bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase">AI</span>
-          </button>
-
+          {/* Browse Spares Tab */}
           <button 
             onClick={() => { setActiveTab("browse"); }}
-            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-              activeTab === "browse" ? "text-blue-600 font-bold" : "text-slate-600 hover:text-blue-600"
+            className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer hidden md:flex items-center gap-1 ${
+              activeTab === "browse" 
+                ? "bg-slate-900 text-white shadow-2xs" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            Browse Spares
+            <Layers className="w-3.5 h-3.5" />
+            <span>Spares</span>
           </button>
 
           {/* Part Requests Live Hub Tab */}
           <button 
             onClick={() => { setActiveTab("requests"); }}
-            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
-              activeTab === "requests" ? "text-blue-600 font-bold" : "text-slate-600 hover:text-blue-600"
+            className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === "requests" 
+                ? "bg-slate-900 text-white shadow-2xs" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <span>Part Requests</span>
+            <span>Requests</span>
             {partRequests.filter(r => r.status !== 'fulfilled' && r.status !== 'closed').length > 0 && (
-              <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+              <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
                 {partRequests.filter(r => r.status !== 'fulfilled' && r.status !== 'closed').length}
               </span>
             )}
           </button>
 
+          {/* Pricing Tab */}
           <button 
             onClick={() => { setActiveTab("pricing"); }}
-            className={`text-xs sm:text-sm font-semibold transition-colors cursor-pointer hidden lg:block ${
-              activeTab === "pricing" ? "text-blue-600 font-bold" : "text-slate-600 hover:text-blue-600"
+            className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer hidden lg:block ${
+              activeTab === "pricing" 
+                ? "bg-slate-900 text-white shadow-2xs" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             Pricing
@@ -626,40 +670,50 @@ export default function App() {
           {/* EFT Payments Link / Gateway */}
           <button
             onClick={() => handleOpenEftModal("subscription")}
-            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
             title="View verified SA EFT Banking details, bank app links & payment slip"
           >
             <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden sm:inline">EFT Payments</span>
-            <span className="sm:hidden">EFT</span>
+            <span className="hidden sm:inline">EFT Hub</span>
+          </button>
+
+          {/* Download / Install Desktop App Header Button */}
+          <button
+            onClick={() => setIsDesktopModalOpen(true)}
+            className="bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+            title="Download and install Partssource ZA desktop application"
+          >
+            <Monitor className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden md:inline">Download App</span>
+            <span className="md:hidden">App</span>
           </button>
 
           {/* Owner Settings: Only visible on local / dev app */}
           {isLocalApp && (
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="text-slate-700 hover:text-blue-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-full shadow-2xs"
+              className="text-slate-700 hover:text-blue-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1.5 rounded-full shadow-2xs"
               title="App Owner Settings & Banking Configuration (Local Mode Only)"
             >
               <Settings className="w-3.5 h-3.5 text-slate-700" />
-              <span className="hidden sm:inline">Settings</span>
+              <span className="hidden xl:inline">Settings</span>
             </button>
           )}
           
           {seller ? (
             <button 
               onClick={() => { setActiveTab("dashboard"); }}
-              className="bg-slate-950 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="bg-slate-950 hover:bg-blue-600 text-white px-3.5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
-              <User className="w-3.5 h-3.5" />
-              <span>{seller.businessName || seller.name}</span>
+              <User className="w-3.5 h-3.5 text-amber-400" />
+              <span className="truncate max-w-[100px]">{seller.businessName || seller.name}</span>
             </button>
           ) : (
             <button 
               onClick={() => { setActiveTab("dashboard"); }}
-              className="bg-slate-950 hover:bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-semibold transition-colors cursor-pointer"
+              className="bg-slate-950 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs hover:shadow-md"
             >
-              Seller Login
+              Seller Hub
             </button>
           )}
         </div>
@@ -668,26 +722,29 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR FILTER PANEL - Only visible during browse mode */}
         {activeTab === "browse" && (
-          <aside className="w-68 bg-white border-r border-slate-200 p-5 sm:p-6 flex flex-col flex-shrink-0 hidden md:flex overflow-y-auto">
+          <aside className="w-72 bg-white border-r border-slate-200/90 p-5 flex flex-col flex-shrink-0 hidden md:flex overflow-y-auto space-y-5">
             {/* Filter Reset Button */}
-            <div className="flex justify-between items-center mb-5">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filters & Fitments</span>
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Refine Spares</span>
+              </div>
               {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
                 <button 
                   onClick={clearAllFilters}
-                  className="text-[10px] font-bold text-blue-600 hover:text-blue-700 underline cursor-pointer"
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
                 >
-                  Clear All
+                  Reset All
                 </button>
               )}
             </div>
 
             {/* Filter Section: Location Narrowing (Province & Town) */}
-            <div className="mb-6 pb-6 border-b border-slate-100 space-y-3">
+            <div className="space-y-3 pb-5 border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
-                  Location (RSA)
+                <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Province (RSA)</span>
                 </h3>
                 {(selectedProvince || selectedTown) && (
                   <button
@@ -697,20 +754,17 @@ export default function App() {
                     }}
                     className="text-[10px] text-slate-400 hover:text-rose-600 font-semibold"
                   >
-                    Reset
+                    Clear
                   </button>
                 )}
               </div>
 
-              {/* Province Select */}
+              {/* Province Select Dropdown */}
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 mb-1">
-                  Province
-                </label>
                 <select
                   value={selectedProvince || ""}
                   onChange={(e) => handleProvinceSelect(e.target.value ? e.target.value : null)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                 >
                   <option value="">All 9 Provinces (RSA)</option>
                   {SA_PROVINCES.map((prov) => (
@@ -722,45 +776,50 @@ export default function App() {
               </div>
 
               {/* Town / City Select */}
-              <div>
-                <label className="block text-[10px] font-semibold text-slate-500 mb-1">
-                  Town / City
-                </label>
-                <select
-                  value={selectedTown || ""}
-                  onChange={(e) => setSelectedTown(e.target.value ? e.target.value : null)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="">
-                    {selectedProvince ? `All Towns in ${selectedProvince}` : "All Towns in South Africa"}
-                  </option>
-                  {availableTowns.map((town) => (
-                    <option key={town} value={town}>
-                      {town}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {selectedProvince && (
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-1">
+                    Town in {selectedProvince}
+                  </label>
+                  <select
+                    value={selectedTown || ""}
+                    onChange={(e) => setSelectedTown(e.target.value ? e.target.value : null)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="">All Towns in {selectedProvince}</option>
+                    {availableTowns.map((town) => (
+                      <option key={town} value={town}>
+                        {town}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Quick Major Province Chips */}
               <div className="pt-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Quick Province:
+                  Popular Hubs:
                 </span>
-                <div className="flex flex-wrap gap-1">
-                  {["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape"].map((provName) => {
-                    const isSelected = selectedProvince === provName;
+                <div className="grid grid-cols-4 gap-1">
+                  {[
+                    { name: "Gauteng", label: "GP" },
+                    { name: "Western Cape", label: "WC" },
+                    { name: "KwaZulu-Natal", label: "KZN" },
+                    { name: "Eastern Cape", label: "EC" }
+                  ].map((p) => {
+                    const isSelected = selectedProvince === p.name;
                     return (
                       <button
-                        key={provName}
-                        onClick={() => handleProvinceSelect(isSelected ? null : provName)}
-                        className={`text-[10px] px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                        key={p.name}
+                        onClick={() => handleProvinceSelect(isSelected ? null : p.name)}
+                        className={`text-[10px] py-1 rounded-lg font-bold transition-all text-center cursor-pointer ${
                           isSelected
-                            ? "bg-amber-600 text-white font-bold"
-                            : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80"
                         }`}
                       >
-                        {provName === "KwaZulu-Natal" ? "KZN" : provName === "Western Cape" ? "WC" : provName === "Eastern Cape" ? "EC" : "GP"}
+                        {p.label}
                       </button>
                     );
                   })}
@@ -769,70 +828,79 @@ export default function App() {
             </div>
 
             {/* Filter Section: Vehicle / Fleet Type */}
-            <div className="mb-6 pb-6 border-b border-slate-100">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Vehicle Type</h3>
-              <div className="space-y-2.5">
+            <div className="space-y-3 pb-5 border-b border-slate-100">
+              <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Vehicle Fitment</h3>
+              <div className="grid grid-cols-3 gap-1 text-xs">
                 {[
-                  { label: "Heavy Duty Trucks", type: "Truck" },
-                  { label: "Passenger Cars", type: "Car" },
-                  { label: "Universal / Other", type: "Other" }
+                  { label: "All", val: null },
+                  { label: "Trucks", val: "Truck" },
+                  { label: "Cars", val: "Car" }
                 ].map((item) => {
-                  const isChecked = selectedVehicleType === item.type;
+                  const isChecked = selectedVehicleType === item.val;
                   return (
-                    <label 
+                    <button
                       key={item.label}
-                      onClick={() => setSelectedVehicleType(isChecked ? null : (item.type as any))}
-                      className="flex items-center gap-3 cursor-pointer group"
+                      type="button"
+                      onClick={() => setSelectedVehicleType(item.val as any)}
+                      className={`py-1.5 rounded-lg text-center font-bold text-[11px] transition-all cursor-pointer ${
+                        isChecked
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
+                      }`}
                     >
-                      <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors border ${
-                        isChecked 
-                          ? "border-blue-600 bg-blue-600 text-white" 
-                          : "border-slate-300 group-hover:border-slate-400 bg-white"
-                      }`}>
-                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-950 transition-colors">
-                        {item.label}
-                      </span>
-                    </label>
+                      {item.label}
+                    </button>
                   );
                 })}
               </div>
             </div>
 
             {/* Filter Section: Category Selectors */}
-            <div className="mb-6 pb-6 border-b border-slate-100 flex-1 min-h-[200px]">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Category</h3>
-              <div className="space-y-1.5 text-xs text-slate-600">
-                <div 
+            <div className="space-y-2 pb-5 border-b border-slate-100 flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Categories</h3>
+                {selectedCategory && (
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-[10px] text-blue-600 hover:underline font-semibold"
+                  >
+                    All
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1 text-xs text-slate-600 max-h-56 overflow-y-auto pr-1">
+                <button 
                   onClick={() => setSelectedCategory(null)}
-                  className={`p-2 rounded cursor-pointer font-semibold transition-all ${
+                  className={`w-full text-left p-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                     selectedCategory === null 
                       ? "bg-blue-50 text-blue-700 font-bold" 
-                      : "hover:bg-slate-50 text-slate-600"
+                      : "hover:bg-slate-50 text-slate-700"
                   }`}
                 >
-                  All Categories
-                </div>
+                  <span>All Categories</span>
+                  {selectedCategory === null && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                </button>
                 {categoriesList.map((cat) => (
-                  <div 
+                  <button 
                     key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`p-2 rounded cursor-pointer transition-all font-semibold ${
+                    onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                    className={`w-full text-left p-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                       selectedCategory === cat 
                         ? "bg-blue-50 text-blue-700 font-bold" 
-                        : "hover:bg-slate-50 text-slate-600"
+                        : "hover:bg-slate-50 text-slate-700"
                     }`}
                   >
-                    {cat}
-                  </div>
+                    <span className="truncate">{cat}</span>
+                    {selectedCategory === cat && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* Filter Section: Condition */}
-            <div className="mb-6 pb-6 border-b border-slate-100">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Condition</h3>
+            <div className="space-y-3 pb-5 border-b border-slate-100">
+              <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Condition</h3>
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                 {["New", "Like New", "Refurbished", "Good", "Fair", "For Parts"].map((cond) => {
                   const isChecked = selectedCondition === cond;
@@ -840,9 +908,9 @@ export default function App() {
                     <button
                       key={cond}
                       onClick={() => setSelectedCondition(isChecked ? null : cond)}
-                      className={`py-1 px-2 rounded-md border text-center transition-all font-semibold cursor-pointer ${
+                      className={`py-1.5 px-2 rounded-lg border text-center transition-all font-bold cursor-pointer ${
                         isChecked 
-                          ? "bg-slate-950 text-white border-slate-950" 
+                          ? "bg-slate-950 text-white border-slate-950 shadow-xs" 
                           : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                       }`}
                     >
@@ -854,41 +922,70 @@ export default function App() {
             </div>
 
             {/* Filter Section: Price range */}
-            <div className="mb-6">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Price Range (ZAR)</h3>
+            <div className="space-y-3 pb-4">
+              <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Price Range (ZAR)</h3>
               <div className="flex items-center gap-2">
                 <input 
                   type="number" 
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="Min" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
+                  placeholder="Min (R)" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
                 />
                 <span className="text-slate-300 text-xs">-</span>
                 <input 
                   type="number" 
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="Max" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
+                  placeholder="Max (R)" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
                 />
+              </div>
+
+              {/* Quick Price Range Presets */}
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <button
+                  onClick={() => { setMinPrice(0); setMaxPrice(1000); }}
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
+                >
+                  Under R1,000
+                </button>
+                <button
+                  onClick={() => { setMinPrice(1000); setMaxPrice(5000); }}
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
+                >
+                  R1k - R5k
+                </button>
+                <button
+                  onClick={() => { setMinPrice(5000); setMaxPrice(20000); }}
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
+                >
+                  R5k - R20k
+                </button>
+                <button
+                  onClick={() => { setMinPrice(20000); setMaxPrice(""); }}
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
+                >
+                  R20,000+
+                </button>
               </div>
             </div>
 
             {/* Sidebar Seller Promo Card */}
-            <div className="mt-auto pt-4">
-              <div className="bg-slate-900 rounded-xl p-5 text-white shadow-xs">
-                <p className="text-[10px] text-blue-400 font-bold mb-1 tracking-wider uppercase">FOR SELLERS</p>
-                <p className="text-xs font-semibold text-slate-200 mb-3.5 leading-relaxed">
-                  Post unlimited spares on South Africa's trusted marketplace.
+            <div className="mt-auto pt-2">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl p-4 text-white shadow-xs border border-slate-800 space-y-2">
+                <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-black uppercase tracking-wider">
+                  <Star className="w-3 h-3 fill-amber-400" />
+                  <span>SCRAPYARDS & SELLERS</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                  List auto & truck spares to thousands of buyers with zero commission.
                 </p>
                 <button 
-                  onClick={() => {
-                    setActiveTab("dashboard");
-                  }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 transition-colors py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  onClick={() => setActiveTab("dashboard")}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
                 >
-                  Post a Spare
+                  Open Seller Hub
                 </button>
               </div>
             </div>
@@ -896,63 +993,127 @@ export default function App() {
         )}
 
         {/* MAIN DYNAMIC CONTENT CONTAINER */}
-        <main className="flex-1 p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto min-w-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto min-w-0">
           
           {/* BROWSE VIEW */}
           {activeTab === "browse" && (
             <>
-              {/* Web Search Engine Hero Feature Card */}
-              <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start sm:items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                    <Globe className="w-5 h-5 animate-pulse" />
-                  </div>
-                  <div>
+              {/* Automotive Hero Banner */}
+              <div className="relative bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-800/90 overflow-hidden">
+                {/* Decorative background grid & glow */}
+                <div className="absolute -right-20 -top-20 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 space-y-4">
+                  {/* Top pill & live counter */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm sm:text-base font-extrabold text-white">
-                        AI Web Spares Search Engine & Scrap Yard Sourcing
-                      </h2>
-                      <span className="bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        Live Grounding
+                      <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                        <span>🇿🇦</span>
+                        <span>South Africa Spares Network</span>
+                      </span>
+                      <span className="text-slate-400 text-xs hidden sm:inline">•</span>
+                      <span className="text-slate-300 text-xs font-semibold hidden sm:inline">
+                        450+ Verified Yards & Importers
                       </span>
                     </div>
-                    <p className="text-xs text-slate-300 mt-0.5 max-w-2xl">
-                      Can't find a part? Search verified South African auto catalogs, scrap yards, OEM cross-reference codes, and scrap yards in real-time.
+
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="font-bold text-[11px]">Direct WhatsApp Quotes</span>
+                    </div>
+                  </div>
+
+                  {/* Headline & Pitch */}
+                  <div className="space-y-1 max-w-3xl">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white font-display">
+                      Find Hard-to-Find Truck & Car Spares Fast
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                      Direct connection to verified South African automotive breakers, scrapyards, and spares distributors across all 9 provinces. Zero buyer fees, instant EFT verification.
                     </p>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => handleOpenWebSearch()}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                    <span>Launch Web Search Engine</span>
-                  </button>
+                  {/* Popular Quick Searches Presets */}
+                  <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+                      Popular:
+                    </span>
+                    {[
+                      "Toyota Hilux GD-6",
+                      "Isuzu D-Max",
+                      "VW Polo Vivo",
+                      "Ford Ranger",
+                      "Scania R500",
+                      "Quantum Taxi",
+                      "BMW N20 Turbo"
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => setSearchQuery(preset)}
+                        className="bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border border-white/15 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setInitialRequestQuery(searchQuery || "");
+                        setIsRequestModalOpen(true);
+                      }}
+                      className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-5 py-3 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md hover:scale-[1.02] cursor-pointer"
+                    >
+                      <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                      <span>Broadcast a Part Request to 450+ Scrapyards</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenWebSearch(searchQuery)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-3 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-blue-400/30 shadow-sm"
+                    >
+                      <Globe className="w-4 h-4" />
+                      <span>Search Live Automotive Web (AI)</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsDesktopModalOpen(true)}
+                      className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-3 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/15 shadow-sm"
+                    >
+                      <Monitor className="w-4 h-4 text-blue-400" />
+                      <span>Download Desktop App</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Marketplace Stats Header */}
-              <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              {/* Marketplace Header & Sorting */}
+              <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 text-slate-950">
-                    {selectedCategory ? selectedCategory : "Automotive & Truck Spares"}
-                  </h1>
-                  <p className="text-slate-500 text-sm">
-                    Showing {listings.length} verified listings from vetted South African distributors.
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 font-display">
+                      {selectedCategory ? selectedCategory : "Available Spares Catalog"}
+                    </h2>
+                    <span className="bg-slate-200 text-slate-800 text-xs font-black px-2.5 py-0.5 rounded-full">
+                      {listings.length}
+                    </span>
+                  </div>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {selectedProvince ? `Filtered by ${selectedProvince}` : "Vetted stock across South Africa"}
                   </p>
                 </div>
 
-                {/* Sorting Controls */}
-                <div className="flex gap-2 items-center self-start md:self-auto">
-                  <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 shadow-xs shrink-0">
-                    <span className="text-slate-400">Sort By:</span>
+                {/* Sorting Controls & Mobile Category Accordion */}
+                <div className="flex items-center gap-2">
+                  <div className="bg-white border border-slate-200/90 px-3 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs">
+                    <span className="text-slate-400 font-semibold">Sort:</span>
                     <select 
                       value={sortOrder} 
                       onChange={(e) => setSortOrder(e.target.value)}
-                      className="font-semibold text-slate-800 bg-transparent border-none outline-hidden p-0 cursor-pointer"
+                      className="font-bold text-slate-800 bg-transparent border-none outline-hidden p-0 cursor-pointer text-xs"
                     >
                       <option value="newest">Featured / Newest</option>
                       <option value="price-asc">Price: Low to High</option>
@@ -960,19 +1121,19 @@ export default function App() {
                     </select>
                   </div>
                   
-                  {/* Mobile Accordion Toggle Button in Header */}
+                  {/* Mobile Category Trigger */}
                   <div className="md:hidden">
                     <button 
                       onClick={() => setIsMobileCategoryAccordionOpen(!isMobileCategoryAccordionOpen)}
-                      className={`p-2 sm:px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                      className={`p-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
                         selectedCategory || isMobileCategoryAccordionOpen
                           ? "bg-blue-600 text-white"
                           : "bg-slate-900 text-white hover:bg-slate-800"
                       }`}
                       title="Toggle Category Filter Menu"
                     >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>{selectedCategory ? selectedCategory : "Categories"}</span>
+                      <Layers className="w-4 h-4" />
+                      <span>{selectedCategory ? selectedCategory : "Filter"}</span>
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMobileCategoryAccordionOpen ? "rotate-180" : ""}`} />
                     </button>
                   </div>
@@ -1362,32 +1523,32 @@ export default function App() {
 
           {/* PRICING VIEW */}
           {activeTab === "pricing" && (
-            <div className="max-w-4xl mx-auto w-full py-6 space-y-8 animate-fade-in">
-              <div className="text-center space-y-3">
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest">
-                  Pricing Plans
+            <div className="max-w-5xl mx-auto w-full py-6 space-y-8 animate-fade-in">
+              <div className="text-center space-y-3 max-w-2xl mx-auto">
+                <span className="text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-3.5 py-1 rounded-full uppercase tracking-wider shadow-2xs">
+                  Zero Commission Direct Advertising
                 </span>
-                <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
-                  Zero Commission, Just Clean Leads
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 font-display">
+                  Transparent Plans for Workshops & Importers
                 </h1>
-                <p className="text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
-                  We don't take a single cent of your parts sales. Advertisers subscribe to simple monthly plans based on active inventory. Sourced with premium leads.
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                  We don't take a single cent of your parts sales. Advertisers subscribe to simple monthly plans based on active stock. All customer leads go directly to your WhatsApp.
                 </p>
               </div>
 
               {/* Three Tier Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                 
                 {/* Tier 1: Starter */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between shadow-xs">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
                       Starter Plan
                     </span>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Individual Mechanic</h3>
+                    <h3 className="text-xl font-black text-slate-900 mb-2 font-display">Individual Mechanic</h3>
                     <div className="flex items-baseline gap-1 py-4 border-b border-slate-100">
-                      <span className="text-3xl font-bold text-slate-900">R{bankingDetails.starterPriceZar ?? 249}</span>
-                      <span className="text-xs text-slate-400 font-medium">/ month</span>
+                      <span className="text-3xl font-black text-slate-900 font-display">R{bankingDetails.starterPriceZar ?? 249}</span>
+                      <span className="text-xs text-slate-400 font-bold">/ month</span>
                     </div>
                     
                     <ul className="space-y-3 pt-6 text-xs text-slate-600 font-medium">
@@ -1397,7 +1558,7 @@ export default function App() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Standard Search visibility</span>
+                        <span>Standard search visibility</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -1405,105 +1566,101 @@ export default function App() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Basic Lead Contact Forms</span>
+                        <span>Direct WhatsApp inquiry links</span>
                       </li>
                     </ul>
                   </div>
 
                   <button 
                     onClick={() => handleSelectPricingPlan("Starter")}
-                    className="w-full border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors py-2.5 rounded-xl text-xs font-bold mt-8 cursor-pointer"
+                    className="w-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all py-3 rounded-2xl text-xs font-black mt-8 cursor-pointer active:scale-95 shadow-2xs"
                   >
                     Select Starter Plan
                   </button>
                 </div>
 
                 {/* Tier 2: Pro */}
-                <div className="bg-white border-2 border-blue-600 rounded-2xl p-6 flex flex-col justify-between shadow-md relative">
-                  <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                <div className="bg-gradient-to-b from-blue-50/50 to-white border-2 border-blue-600 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-lg shadow-blue-600/10 relative">
+                  <div className="absolute top-0 right-7 -translate-y-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
                     Most Popular
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-1">
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">
                       Pro Plan
                     </span>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Automotive Workshops</h3>
-                    <div className="flex items-baseline gap-1 py-4 border-b border-slate-100">
-                      <span className="text-3xl font-bold text-slate-900">R{bankingDetails.proPriceZar ?? 499}</span>
-                      <span className="text-xs text-slate-400 font-medium">/ month</span>
+                    <h3 className="text-xl font-black text-slate-900 mb-2 font-display">Automotive Workshops</h3>
+                    <div className="flex items-baseline gap-1 py-4 border-b border-blue-100/60">
+                      <span className="text-3xl font-black text-slate-900 font-display">R{bankingDetails.proPriceZar ?? 499}</span>
+                      <span className="text-xs text-slate-400 font-bold">/ month</span>
                     </div>
                     
-                    <ul className="space-y-3 pt-6 text-xs text-slate-600 font-medium">
+                    <ul className="space-y-3 pt-6 text-xs text-slate-700 font-medium">
                       <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Up to 35 active advertisements</span>
+                        <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="font-bold text-slate-900">Up to 35 active advertisements</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="text-blue-700 font-bold">Premium Spotlight Badge</span>
+                        <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="text-blue-700 font-bold">Verified PRO Spotlight Badge</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Priority Search Visibility</span>
+                        <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>Priority top catalog search ranking</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Instant WhatsApp Direct Lead Routing</span>
+                        <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>Instant WhatsApp direct lead routing</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Gemini AI description generator</span>
+                        <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>AI parts description & OEM matcher</span>
                       </li>
                     </ul>
                   </div>
 
                   <button 
                     onClick={() => handleSelectPricingPlan("Pro")}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors py-2.5 rounded-xl text-xs font-bold mt-8 cursor-pointer shadow-sm"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all py-3 rounded-2xl text-xs font-black mt-8 cursor-pointer shadow-md shadow-blue-500/20 active:scale-95"
                   >
                     Select Pro Plan
                   </button>
                 </div>
 
                 {/* Tier 3: Enterprise */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between shadow-xs">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
                       Enterprise Plan
                     </span>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Importers & Yards</h3>
+                    <h3 className="text-xl font-black text-slate-900 mb-2 font-display">Importers & Scrap Yards</h3>
                     <div className="flex items-baseline gap-1 py-4 border-b border-slate-100">
-                      <span className="text-3xl font-bold text-slate-900">R{bankingDetails.enterprisePriceZar ?? 999}</span>
-                      <span className="text-xs text-slate-400 font-medium">/ month</span>
+                      <span className="text-3xl font-black text-slate-900 font-display">R{bankingDetails.enterprisePriceZar ?? 999}</span>
+                      <span className="text-xs text-slate-400 font-bold">/ month</span>
                     </div>
                     
                     <ul className="space-y-3 pt-6 text-xs text-slate-600 font-medium">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="font-bold text-slate-900">Unlimited advertisements</span>
+                        <span className="font-black text-slate-900">Unlimited advertisements</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Premium Spotlight Badge</span>
+                        <span>Enterprise Verified Badge</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Premium top search ranking</span>
+                        <span>Bulk CSV inventory upload</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Auto listing feed sync (CSV / XML)</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span>Dedicated Account Executive</span>
+                        <span>Dedicated Account Manager</span>
                       </li>
                     </ul>
                   </div>
 
                   <button 
                     onClick={() => handleSelectPricingPlan("Enterprise")}
-                    className="w-full border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors py-2.5 rounded-xl text-xs font-bold mt-8 cursor-pointer"
+                    className="w-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all py-3 rounded-2xl text-xs font-black mt-8 cursor-pointer active:scale-95 shadow-2xs"
                   >
                     Select Enterprise Plan
                   </button>
@@ -1512,26 +1669,26 @@ export default function App() {
               </div>
 
               {/* EFT Direct Bank Transfer & Banking Slip Banner */}
-              <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-800/80 text-emerald-100 rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm">
-                <div className="space-y-1.5 text-center md:text-left">
+              <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-800/80 text-emerald-100 rounded-3xl p-6 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm">
+                <div className="space-y-2 text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                    <span className="bg-emerald-400 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                    <span className="bg-emerald-400 text-slate-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full">
                       0% Processing Fees
                     </span>
                     <span className="text-xs font-bold text-emerald-300">
                       Direct South African Bank EFT Transfer
                     </span>
                   </div>
-                  <h4 className="text-base font-bold text-white">
-                    Need our official EFT banking details or payment slip?
+                  <h4 className="text-base sm:text-lg font-black text-white font-display">
+                    Official EFT Banking Details & Instant Proof of Payment
                   </h4>
                   <p className="text-xs text-emerald-200/90 max-w-xl leading-relaxed">
-                    Pay subscriptions or spares deposits securely via FNB, Standard Bank, Capitec, Nedbank, Absa, Discovery, or TymeBank. Generate your official printable banking slip or upload Proof of Payment via WhatsApp.
+                    Pay subscriptions or secure stock deposits directly via FNB, Standard Bank, Capitec, Nedbank, Absa, Discovery, or TymeBank. Upload your POP slip to activate listings instantly.
                   </p>
                 </div>
                 <button
                   onClick={() => handleOpenEftModal("subscription", 499)}
-                  className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs px-5 py-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 hover:scale-[1.02] w-full md:w-auto"
+                  className="bg-emerald-400 hover:bg-emerald-300 active:scale-95 text-slate-950 font-black text-xs px-6 py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shrink-0 w-full md:w-auto"
                 >
                   <Building2 className="w-4 h-4 text-slate-950" />
                   <span>View EFT Banking Details & Slip</span>
@@ -1539,10 +1696,10 @@ export default function App() {
               </div>
 
               {/* Secure Transaction Note */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50 border border-slate-100 p-4 rounded-xl text-xs text-slate-500 max-w-xl mx-auto text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center gap-3 bg-white border border-slate-200/80 p-5 rounded-2xl text-xs text-slate-500 max-w-xl mx-auto text-center sm:text-left shadow-2xs">
                 <ShieldCheck className="w-8 h-8 text-blue-600 shrink-0" />
-                <p className="leading-relaxed">
-                  All transactions are secure and encrypted via South African merchant pathways. You can upgrade, downgrade, or cancel your advertisement plan at any time with no lock-in terms.
+                <p className="leading-relaxed font-medium">
+                  All transactions and banking details are encrypted and verified against official South African clearing regulations. Cancel or modify your plan anytime without penalties.
                 </p>
               </div>
             </div>
@@ -1724,28 +1881,52 @@ export default function App() {
             />
           )}
 
-          {/* DUSTY ROAD / LIVE FOOTER STATUS BAR */}
-          <footer className="h-12 border-t border-slate-200 flex items-center justify-between mt-auto bg-white -mx-6 lg:-mx-8 px-6 lg:px-8 flex-shrink-0">
-            <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-              <span>Active Sellers: {activeSellerCount}</span>
-              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-              <span>Listed Spares: {listedItemsCount.toLocaleString("en-ZA")}</span>
+          {/* MODERN AUTOMOTIVE MARKETPLACE FOOTER */}
+          <footer className="border-t border-slate-200/80 bg-white/90 backdrop-blur-md -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3.5 flex-shrink-0 mt-auto flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold text-slate-500">
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="uppercase tracking-wider font-extrabold text-slate-900">Network Live</span>
+              </div>
+              <span className="text-slate-300 hidden sm:inline">•</span>
+              <span className="text-slate-600">
+                <strong className="text-slate-900">{activeSellerCount}</strong> Vetted Yards
+              </span>
+              <span className="text-slate-300 hidden sm:inline">•</span>
+              <span className="text-slate-600">
+                <strong className="text-slate-900">{listedItemsCount.toLocaleString("en-ZA")}</strong> Cataloged Spares
+              </span>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs">
+              <button
+                onClick={() => setIsDesktopModalOpen(true)}
+                className="text-[11px] font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-full flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                title="Download & Install Partssource ZA to Desktop"
+              >
+                <Monitor className="w-3 h-3 text-blue-600" />
+                <span>Download Desktop App</span>
+              </button>
+
               <button
                 onClick={() => handleOpenEftModal("general")}
-                className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
+                className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                 title="View South African EFT Banking Details, Bank Links & POP submission"
               >
-                <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>EFT Banking & POP</span>
+                <Building2 className="w-3 h-3 text-emerald-600" />
+                <span>EFT Trust & POP</span>
               </button>
-              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Market Live</span>
-              </div>
+
+              <button
+                onClick={() => {
+                  setInitialRequestQuery(searchQuery || "");
+                  setIsRequestModalOpen(true);
+                }}
+                className="text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1 rounded-full flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <PlusCircle className="w-3 h-3 text-amber-500" />
+                <span>Request Part</span>
+              </button>
             </div>
           </footer>
 
@@ -1890,6 +2071,14 @@ export default function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         bankingDetails={bankingDetails}
+      />
+
+      {/* DESKTOP APP DOWNLOAD & INSTALLATION MODAL */}
+      <DesktopDownloadModal
+        isOpen={isDesktopModalOpen}
+        onClose={() => setIsDesktopModalOpen(false)}
+        deferredPrompt={deferredPrompt}
+        onInstalled={() => setIsAppInstalled(true)}
       />
     </div>
   );

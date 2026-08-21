@@ -1,0 +1,37 @@
+{
+  "name": "Partssource ZA - Auto & Truck Spares",
+  "short_name": "Partssource ZA",
+  "description": "South Africa's Premier Auto & Truck Parts Marketplace & Sourcing Network",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "categories": ["business", "shopping", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Spares",
+      "url": "/?tab=browse",
+      "description": "Browse automotive and truck spares catalog"
+    },
+    {
+      "name": "Request a Part",
+      "url": "/?action=request",
+      "description": "Broadcast part sourcing request to scrapyards"
+    },
+    {
+      "name": "Seller Hub",
+      "url": "/?tab=dashboard",
+      "description": "Manage listings, stock, and EFT banking"
+    }
+  ]
+}

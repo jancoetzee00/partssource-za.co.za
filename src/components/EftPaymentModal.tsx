@@ -29,7 +29,10 @@ import {
   Send,
   Loader2,
   BellRing,
-  Info
+  Info,
+  Sparkles,
+  PartyPopper,
+  BadgeCheck
 } from "lucide-react";
 import { submitProofOfPaymentToFirestore } from "../lib/firestoreServices";
 
@@ -122,6 +125,28 @@ export const EftPaymentModal: React.FC<EftPaymentModalProps> = ({
     timestamp: string;
     popId: string;
   } | null>(null);
+
+  // Toast Notification State
+  const [toastNotification, setToastNotification] = useState<{
+    id: string;
+    title: string;
+    message: string;
+    reference: string;
+    amount: number;
+    recipient: string;
+    fileName: string;
+    timestamp: string;
+  } | null>(null);
+  const [toastKey, setToastKey] = useState(0);
+
+  // Auto dismiss toast after 6.5 seconds
+  React.useEffect(() => {
+    if (!toastNotification) return;
+    const timer = setTimeout(() => {
+      setToastNotification(null);
+    }, 6500);
+    return () => clearTimeout(timer);
+  }, [toastNotification, toastKey]);
 
   if (!isOpen) return null;
 
@@ -263,13 +288,27 @@ export const EftPaymentModal: React.FC<EftPaymentModalProps> = ({
           ? "Partssource ZA Finance & Accounts" 
           : "Seller & Platform Accounts";
 
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
       setPopSuccess({
         reference: referenceCode,
         amount: parsedAmount,
         recipientName: recipientDisplayName,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: nowTime,
         popId: result.popId
       });
+
+      setToastNotification({
+        id: result.popId,
+        title: "Proof of Payment Uploaded to Storage!",
+        message: `Slip successfully attached and notification sent to ${recipientDisplayName}.`,
+        reference: referenceCode,
+        amount: parsedAmount,
+        recipient: recipientDisplayName,
+        fileName: uploadedFile.name,
+        timestamp: nowTime
+      });
+      setToastKey(prev => prev + 1);
 
       if (onUploadSuccess) {
         onUploadSuccess({
@@ -391,8 +430,66 @@ export const EftPaymentModal: React.FC<EftPaymentModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-scale-in my-auto flex flex-col max-h-[94vh]">
+      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-scale-in my-auto flex flex-col max-h-[94vh] relative">
         
+        {/* FLOATING SUCCESS TOAST NOTIFICATION */}
+        {toastNotification && (
+          <div 
+            key={toastKey}
+            className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-50 bg-slate-950/95 text-white border-2 border-emerald-500 rounded-2xl p-3.5 sm:p-4 shadow-2xl backdrop-blur-md animate-toast-in overflow-hidden"
+          >
+            {/* Animated Countdown Progress Bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-950">
+              <div className="h-full bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 animate-progress-shrink" />
+            </div>
+
+            <div className="flex items-start justify-between gap-3 pt-1">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="relative shrink-0 mt-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black animate-success-bounce shadow-md">
+                    <Check className="w-5 h-5 stroke-[3]" />
+                  </div>
+                  <span className="absolute -inset-1 rounded-xl bg-emerald-400/30 animate-glow-ring pointer-events-none" />
+                </div>
+
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      Upload Succeeded
+                    </span>
+                    <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono px-2 py-0.2 rounded-full">
+                      {toastNotification.reference}
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs sm:text-sm font-bold text-white truncate">
+                    {toastNotification.title}
+                  </h4>
+
+                  <p className="text-[11px] text-slate-300 leading-snug">
+                    {toastNotification.message}
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-0.5 text-[10px] text-slate-400 flex-wrap">
+                    <span>File: <strong className="text-slate-200">{toastNotification.fileName}</strong></span>
+                    <span>•</span>
+                    <span>Amount: <strong className="text-emerald-400">R{toastNotification.amount.toLocaleString("en-ZA")}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setToastNotification(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                title="Dismiss toast"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-5 sm:p-6 flex items-start justify-between relative">
           <div className="space-y-1.5 pr-8">
@@ -755,53 +852,101 @@ export const EftPaymentModal: React.FC<EftPaymentModalProps> = ({
           {activeTab === "upload_pop" && (
             <div className="space-y-5">
               
-              {/* Success Notification Banner */}
+              {/* Animated Success Celebration Banner */}
               {popSuccess && (
-                <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-5 space-y-3 animate-scale-in">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <CheckCircle2 className="w-6 h-6" />
+                <div className="bg-gradient-to-b from-emerald-50/90 via-emerald-50/40 to-white border-2 border-emerald-500 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 animate-scale-in relative overflow-hidden">
+                  {/* Floating particle sparkles */}
+                  <div className="absolute top-3 right-6 pointer-events-none opacity-80">
+                    <Sparkles className="w-6 h-6 text-amber-400 animate-particle-1" />
+                  </div>
+                  <div className="absolute top-8 right-16 pointer-events-none opacity-70">
+                    <PartyPopper className="w-5 h-5 text-emerald-500 animate-particle-2" />
+                  </div>
+                  <div className="absolute bottom-4 left-6 pointer-events-none opacity-60">
+                    <Sparkles className="w-4 h-4 text-emerald-400 animate-particle-3" />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    {/* Animated Bouncy Check Icon */}
+                    <div className="relative shrink-0">
+                      <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg animate-success-bounce">
+                        <Check className="w-7 h-7 stroke-[3]" />
+                      </div>
+                      <span className="absolute -inset-2 rounded-2xl bg-emerald-400/30 animate-glow-ring pointer-events-none" />
                     </div>
+
                     <div className="space-y-1 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-black text-emerald-950">
-                          Proof of Payment Uploaded & Seller Notified!
-                        </h4>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                          <BadgeCheck className="w-3.5 h-3.5 text-emerald-200" />
+                          Storage Upload Confirmed
+                        </span>
+                        <span className="text-[11px] font-mono font-bold text-slate-500">
                           {popSuccess.timestamp}
                         </span>
                       </div>
-                      <p className="text-xs text-emerald-800 leading-relaxed">
-                        Your proof of payment reference <strong className="font-mono">{popSuccess.reference}</strong> for <strong>R{popSuccess.amount.toLocaleString("en-ZA")}</strong> has been saved and dispatched to <strong>{popSuccess.recipientName}</strong>.
+                      <h3 className="text-base sm:text-lg font-black font-display text-slate-900">
+                        Proof of Payment Saved & Seller Alerted!
+                      </h3>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Your payment slip was stored in our verified system and an automated transaction notification was dispatched to <strong>{popSuccess.recipientName}</strong>.
                       </p>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-emerald-200/80 flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
-                      <BellRing className="w-3.5 h-3.5 text-emerald-600" />
-                      Live alert sent to seller dashboard & accounts desk
+                  {/* Transaction Details Pill Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-white p-3.5 rounded-2xl border border-emerald-200/80 shadow-2xs text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Reference</span>
+                      <span className="font-mono font-black text-slate-900 text-xs sm:text-sm">{popSuccess.reference}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Amount Paid</span>
+                      <span className="font-black text-emerald-700 text-xs sm:text-sm">R{popSuccess.amount.toLocaleString("en-ZA")}.00</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Verification Status</span>
+                      <span className="inline-flex items-center gap-1 font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md text-[10px] mt-0.5">
+                        <Clock className="w-3 h-3 text-teal-600" /> Instant Match Queued
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="pt-2 border-t border-emerald-200/80 flex flex-wrap items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-900 font-semibold">
+                      <BellRing className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                      <span>Live alert pushed to seller dashboard</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <a
                         href={popWhatsAppUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors shadow-2xs"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 transition-all shadow-xs hover:scale-[1.02] cursor-pointer"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Send on WhatsApp</span>
+                        <MessageSquare className="w-3.5 h-3.5 fill-white" />
+                        <span>Confirm on WhatsApp</span>
                       </a>
 
                       <button
+                        type="button"
                         onClick={() => {
                           setPopSuccess(null);
                           setUploadedFile(null);
                         }}
-                        className="text-xs font-bold text-emerald-900 hover:text-emerald-950 underline px-2 py-1 cursor-pointer"
+                        className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-colors cursor-pointer"
                       >
                         Upload Another
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Done
                       </button>
                     </div>
                   </div>
