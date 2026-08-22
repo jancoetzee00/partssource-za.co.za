@@ -55,32 +55,6 @@ export interface Seller {
   };
 }
 
-export interface SellerReview {
-  id: string;
-  sellerId: string;
-  sellerName?: string;
-  rating: number; // 1 to 5
-  comment: string;
-  reviewerName: string;
-  reviewerContact?: string;
-  partPurchased?: string;
-  verifiedPurchase: boolean;
-  createdAt: string;
-}
-
-export interface SellerRatingStats {
-  averageRating: number;
-  totalReviews: number;
-  ratingDistribution: {
-    5: number;
-    4: number;
-    3: number;
-    2: number;
-    1: number;
-  };
-  reviews: SellerReview[];
-}
-
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';

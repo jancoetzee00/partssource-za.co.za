@@ -69,23 +69,9 @@ service cloud.firestore {
         && data.type is string && data.type.size() <= 50;
     }
 
-    function isValidSellerReview(data) {
-      return data.sellerId is string && data.sellerId.size() <= 128
-        && data.rating is number && data.rating >= 1 && data.rating <= 5
-        && data.comment is string && data.comment.size() <= 2000
-        && data.reviewerName is string && data.reviewerName.size() <= 100;
-    }
-
     // Default deny catch-all
     match /{document=**} {
       allow read, write: if false;
-    }
-
-    // Seller Reviews & 5-Star Feedback
-    match /seller_reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isValidSellerReview(incoming());
-      allow update, delete: if true;
     }
 
     // Proof of Payment Uploads

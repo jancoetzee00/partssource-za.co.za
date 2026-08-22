@@ -5,32 +5,7 @@
 
 import React, { useState } from "react";
 import { PartListing } from "../types";
-import { 
-  X, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  CheckCircle, 
-  MessageSquare, 
-  ShieldCheck, 
-  Info, 
-  Sparkles, 
-  AlertCircle, 
-  Loader2, 
-  Globe, 
-  Search, 
-  Building2, 
-  Share2, 
-  Copy, 
-  Check,
-  Star,
-  Truck,
-  FileText,
-  ChevronDown,
-  ChevronUp,
-  Send,
-  PackageCheck
-} from "lucide-react";
+import { X, MapPin, Phone, Mail, CheckCircle, MessageSquare, ShieldCheck, Info, Sparkles, AlertCircle, Loader2, Globe, Search, Building2 } from "lucide-react";
 
 interface ListingDetailsModalProps {
   listing: PartListing;
@@ -46,9 +21,6 @@ interface ListingDetailsModalProps {
     targetListingId?: string,
     targetListingTitle?: string
   ) => void;
-  sellerRating?: number;
-  sellerReviewsCount?: number;
-  onRateSeller?: (sellerId: string, sellerName: string, partTitle: string) => void;
 }
 
 export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ 
@@ -56,23 +28,15 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
   onClose, 
   onViewSellerProfile,
   onOpenWebSearch,
-  onOpenEftModal,
-  sellerRating,
-  sellerReviewsCount,
-  onRateSeller
+  onOpenEftModal
 }) => {
   const [activeTab, setActiveTab] = useState<"phone" | "message">("phone");
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedInquiry, setCopiedInquiry] = useState(false);
-  const [showInquiryCustomizer, setShowInquiryCustomizer] = useState(false);
-  const [inquiryDestination, setInquiryDestination] = useState("");
-  const [inquiryTemplateType, setInquiryTemplateType] = useState<"shipping" | "urgent" | "fitment">("shipping");
   
   // Message Form State
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
-  const [messageBody, setMessageBody] = useState(`Hi ${listing.sellerName}, is the "${listing.title}" (Part #: ${listing.partNumber || "OEM"}) still available? Please provide a shipping/courier estimate.`);
+  const [messageBody, setMessageBody] = useState(`Hi ${listing.sellerName}, is the "${listing.title}" still available? I would like to arrange purchase or delivery.`);
   const [sending, setSending] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
 
@@ -110,109 +74,10 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
     }, 1200);
   };
 
-  // Helper to format South African phone numbers for WhatsApp wa.me links
-  const formatWhatsAppPhone = (phoneStr: string) => {
-    let cleaned = phoneStr.replace(/[^\d+]/g, '');
-    if (cleaned.startsWith('+')) {
-      cleaned = cleaned.substring(1);
-    } else if (cleaned.startsWith('0')) {
-      cleaned = '27' + cleaned.substring(1);
-    }
-    return cleaned;
-  };
-
-  const currentListingUrl = typeof window !== "undefined"
-    ? `${window.location.origin}${window.location.pathname}?listingId=${encodeURIComponent(listing.id)}`
-    : `https://partssource.co.za?listingId=${listing.id}`;
-
-  // Generate pre-filled, professional WhatsApp inquiry message template
-  const generateWhatsAppInquiry = () => {
-    const sellerDisplayName = listing.sellerBusinessName || listing.sellerName || "Seller";
-    const destinationNote = inquiryDestination.trim() 
-      ? ` to *${inquiryDestination.trim()}*` 
-      : ` to my delivery address`;
-    
-    if (inquiryTemplateType === "urgent") {
-      return (
-        `Hello ${sellerDisplayName},\n\n` +
-        `I would like to urgently purchase this spare part listed on *Partssource ZA*:\n\n` +
-        `📦 *Part Title:* ${listing.title}\n` +
-        `🔢 *Part / OEM #:* ${listing.partNumber || "OEM Genuine"}\n` +
-        (listing.brand ? `🏷️ *Brand:* ${listing.brand}\n` : "") +
-        `💰 *Listed Price:* ${formatPrice(listing.price)}\n` +
-        `🔧 *Condition:* ${listing.condition}\n` +
-        `📍 *Seller Location:* ${listing.location}\n\n` +
-        `Could you please confirm immediate availability and provide an *urgent courier/shipping quotation*${destinationNote} (e.g. Courier Guy / RAM / Dawn Wing)? Please also share your EFT banking details for swift payment.\n\n` +
-        `🔗 *Listing Reference:* ${currentListingUrl}\n\n` +
-        `Thank you!`
-      );
-    }
-
-    if (inquiryTemplateType === "fitment") {
-      return (
-        `Hello ${sellerDisplayName},\n\n` +
-        `I am inquiring about fitment compatibility and shipping for this part on *Partssource ZA*:\n\n` +
-        `📦 *Part Title:* ${listing.title}\n` +
-        `🔢 *Part / OEM #:* ${listing.partNumber || "OEM Genuine"}\n` +
-        (listing.brand ? `🏷️ *Brand:* ${listing.brand}\n` : "") +
-        `🚗 *Compatibility / Fitment:* ${listing.compatibility || listing.vehicleType}\n` +
-        `💰 *Listed Price:* ${formatPrice(listing.price)} (${listing.condition})\n` +
-        `📍 *Location:* ${listing.location}\n\n` +
-        `Could you please verify that this part matches my vehicle and provide a *shipping estimate*${destinationNote}?\n\n` +
-        `🔗 *Listing Reference:* ${currentListingUrl}\n\n` +
-        `Looking forward to your confirmation!`
-      );
-    }
-
-    // Default: Professional Standard Inquiry & Shipping Estimate Template
-    return (
-      `Hello ${sellerDisplayName},\n\n` +
-      `I saw your listing on *Partssource ZA* and would like to inquire about purchasing this part:\n\n` +
-      `📦 *Part Title:* ${listing.title}\n` +
-      `🔢 *Part / OEM #:* ${listing.partNumber || "OEM Genuine"}\n` +
-      (listing.brand ? `🏷️ *Brand:* ${listing.brand}\n` : "") +
-      `💰 *Listed Price:* ${formatPrice(listing.price)}\n` +
-      `🔧 *Condition:* ${listing.condition}\n` +
-      `🚗 *Fitment:* ${listing.compatibility || listing.vehicleType}\n` +
-      `📍 *Seller Yard / Location:* ${listing.location}\n\n` +
-      `Could you please confirm if this item is currently available, and provide a *shipping / courier estimate*${destinationNote}? Please let me know your preferred payment and dispatch arrangements.\n\n` +
-      `🔗 *Listing Reference:* ${currentListingUrl}\n\n` +
-      `Thank you!`
-    );
-  };
-
-  const whatsAppInquiryMessage = generateWhatsAppInquiry();
-  const cleanPhone = formatWhatsAppPhone(listing.sellerPhone);
-  const whatsAppLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppInquiryMessage)}`;
-
-  // Generate pre-filled WhatsApp share link (with title, price, vehicle type & direct link)
-  const shareWhatsAppMessage = encodeURIComponent(
-    `*${listing.title}*\n` +
-    `💰 Price: ${formatPrice(listing.price)}\n` +
-    `📍 Location: ${listing.location}\n` +
-    `🏷️ Category: ${listing.category} (${listing.vehicleType === "Truck" ? "Heavy Truck Spares" : listing.vehicleType === "Car" ? "Car & Bakkie Spares" : "Universal Spares"})\n` +
-    (listing.partNumber ? `🔢 OEM / Part #: ${listing.partNumber}\n` : "") +
-    (listing.brand ? `⚙️ Brand: ${listing.brand}\n` : "") +
-    `\n🔗 View full listing on Partssource ZA:\n${currentListingUrl}`
-  );
-
-  const shareWhatsAppUrl = `https://api.whatsapp.com/send?text=${shareWhatsAppMessage}`;
-
-  const handleCopyLink = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(currentListingUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    }
-  };
-
-  const handleCopyInquiryText = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(whatsAppInquiryMessage);
-      setCopiedInquiry(true);
-      setTimeout(() => setCopiedInquiry(false), 2500);
-    }
-  };
+  // Generate pre-filled WhatsApp link
+  const whatsAppText = encodeURIComponent(`Hi ${listing.sellerName}, I saw your listing for "${listing.title}" (R${listing.price.toLocaleString("en-ZA")}) on Partssource ZA. Is this still available?`);
+  const cleanPhone = listing.sellerPhone.replace(/\s+/g, '').replace('+', '');
+  const whatsAppLink = `https://wa.me/${cleanPhone}?text=${whatsAppText}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -353,67 +218,7 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                 ) : (
                   <span className="block font-semibold text-white">{listing.sellerBusinessName || listing.sellerName}</span>
                 )}
-                
-                <div className="flex items-center justify-end gap-1 mt-0.5">
-                  {sellerRating !== undefined ? (
-                    <div className="inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.2 rounded font-bold">
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                      <span>{sellerRating.toFixed(1)}</span>
-                      {sellerReviewsCount !== undefined && <span className="opacity-80 font-normal">({sellerReviewsCount})</span>}
-                    </div>
-                  ) : (
-                    <span>Active Advertiser</span>
-                  )}
-                  {onRateSeller && (
-                    <button
-                      type="button"
-                      onClick={() => onRateSeller(listing.sellerId, listing.sellerBusinessName || listing.sellerName, listing.title)}
-                      className="text-blue-300 hover:text-white underline cursor-pointer ml-1"
-                    >
-                      Rate
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Share to WhatsApp Action Box */}
-            <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-2xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shadow-2xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <Share2 className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <span className="block text-xs font-bold text-emerald-950 leading-tight">
-                    Share Spare via WhatsApp
-                  </span>
-                  <span className="block text-[10px] text-emerald-700 font-medium truncate">
-                    Includes title, price, location & listing link
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <a
-                  id="share-to-whatsapp-btn"
-                  href={shareWhatsAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer hover:shadow-xs"
-                >
-                  <MessageSquare className="w-3.5 h-3.5 fill-white" />
-                  <span>Share to WhatsApp</span>
-                </a>
-                <button
-                  id="copy-listing-link-btn"
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="bg-white hover:bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                  title="Copy listing URL to clipboard"
-                >
-                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-emerald-700" />}
-                  <span>{copiedLink ? "Copied" : "Copy Link"}</span>
-                </button>
+                <span>Active Advertiser</span>
               </div>
             </div>
 
@@ -443,131 +248,17 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
               </div>
 
               {activeTab === "phone" ? (
-                <div className="space-y-3 animate-fade-in">
-                  {/* Primary WhatsApp Action with Part # & Shipping Quote Pre-fill */}
-                  <div className="space-y-1.5">
-                    <a 
-                      id="whatsapp-seller-direct-btn"
-                      href={whatsAppLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
-                    >
-                      <MessageSquare className="w-4 h-4 fill-white" />
-                      <span>WhatsApp Seller (Pre-filled Inquiry & Shipping Request)</span>
-                    </a>
-                    <div className="flex items-center justify-between text-[10px] text-emerald-800 px-1">
-                      <span className="flex items-center gap-1">
-                        <PackageCheck className="w-3 h-3 text-emerald-600" />
-                        <span>Includes {listing.partNumber ? `Part #${listing.partNumber}` : "Part details"} & Courier Quote</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowInquiryCustomizer(!showInquiryCustomizer)}
-                        className="text-emerald-700 hover:text-emerald-950 font-semibold underline flex items-center gap-0.5 cursor-pointer"
-                      >
-                        <span>{showInquiryCustomizer ? "Hide Template" : "Customize / Preview Template"}</span>
-                        {showInquiryCustomizer ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      </button>
-                    </div>
-                  </div>
+                <div className="space-y-2.5 animate-fade-in">
+                  <a 
+                    href={whatsAppLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4 fill-white" />
+                    <span>WhatsApp Seller Instantly</span>
+                  </a>
 
-                  {/* WhatsApp Inquiry Customizer & Live Template Preview */}
-                  {showInquiryCustomizer && (
-                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3 space-y-2.5 animate-scale-in text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-emerald-950 flex items-center gap-1.5 text-[11px]">
-                          <FileText className="w-3.5 h-3.5 text-emerald-700" />
-                          <span>WhatsApp Inquiry Template Builder</span>
-                        </span>
-                        <span className="text-[10px] bg-emerald-200/60 text-emerald-900 font-bold px-1.5 py-0.5 rounded">
-                          Pre-filled
-                        </span>
-                      </div>
-
-                      {/* Template Selector Pills */}
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setInquiryTemplateType("shipping")}
-                          className={`py-1 px-1.5 rounded-lg text-[10px] font-bold border transition-all text-center cursor-pointer ${
-                            inquiryTemplateType === "shipping"
-                              ? "bg-emerald-700 text-white border-emerald-800 shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-100/50"
-                          }`}
-                        >
-                          🚚 Shipping Quote
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInquiryTemplateType("urgent")}
-                          className={`py-1 px-1.5 rounded-lg text-[10px] font-bold border transition-all text-center cursor-pointer ${
-                            inquiryTemplateType === "urgent"
-                              ? "bg-emerald-700 text-white border-emerald-800 shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-100/50"
-                          }`}
-                        >
-                          ⚡ Urgent Dispatch
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInquiryTemplateType("fitment")}
-                          className={`py-1 px-1.5 rounded-lg text-[10px] font-bold border transition-all text-center cursor-pointer ${
-                            inquiryTemplateType === "fitment"
-                              ? "bg-emerald-700 text-white border-emerald-800 shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-100/50"
-                          }`}
-                        >
-                          🔍 Fitment Check
-                        </button>
-                      </div>
-
-                      {/* Optional Delivery Destination Input */}
-                      <div>
-                        <label className="block text-[10px] font-bold text-emerald-900 mb-1">
-                          Delivery Town / City for Shipping Estimate:
-                        </label>
-                        <div className="relative">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={inquiryDestination}
-                            onChange={(e) => setInquiryDestination(e.target.value)}
-                            placeholder="e.g. Pretoria, Durban, Polokwane, Cape Town..."
-                            className="w-full pl-8 pr-2.5 py-1.5 bg-white border border-emerald-300 rounded-lg text-[11px] text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Formatted Template Preview Box */}
-                      <div className="bg-slate-900 text-emerald-300 p-2.5 rounded-lg text-[10px] font-mono whitespace-pre-wrap max-h-32 overflow-y-auto leading-relaxed border border-slate-800">
-                        {whatsAppInquiryMessage}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 pt-0.5">
-                        <a
-                          href={whatsAppLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>Open in WhatsApp</span>
-                        </a>
-                        <button
-                          type="button"
-                          onClick={handleCopyInquiryText}
-                          className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                        >
-                          {copiedInquiry ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-600" />}
-                          <span>{copiedInquiry ? "Copied" : "Copy Text"}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Phone Call Box */}
                   <div className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50/50">
                     <div className="flex items-center gap-2 text-xs text-slate-700">
                       <Phone className="w-4 h-4 text-slate-400" />
@@ -586,7 +277,7 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
 
                   <div className="flex items-center gap-2 p-2.5 bg-sky-50 text-sky-800 rounded-xl text-[10px]">
                     <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
-                    <span>This advertiser is fully subscribed and holds a verified contact number. Always trade in daylight hours.</span>
+                    <span>This advertiser is fully subscribed and holds an verified contact number. Always trade in daylight hours.</span>
                   </div>
 
                   {onOpenEftModal && (
