@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { PartListing, PartRequest, Seller, SubscriptionBankingDetails } from "./types";
+import { PartListing, PartRequest, Seller, SubscriptionBankingDetails, SellerReview } from "./types";
 import { SA_PROVINCES, getTownsForProvince, matchesLocation } from "./data/saLocations";
 import { ListingCard } from "./components/ListingCard";
 import { ListingDetailsModal } from "./components/ListingDetailsModal";
@@ -19,6 +19,8 @@ import { PartRequestsView } from "./components/PartRequestsView";
 import { EftPaymentModal } from "./components/EftPaymentModal";
 import { DesktopDownloadModal } from "./components/DesktopDownloadModal";
 import { QuickFiltersBar } from "./components/QuickFiltersBar";
+import { LeaveReviewModal } from "./components/LeaveReviewModal";
+import { SellerReviewsSection } from "./components/SellerReviewsSection";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
@@ -27,6 +29,8 @@ import {
   deleteListingFromFirestore, 
   subscribeToBankingDetails,
   subscribeToPartRequests,
+  subscribeToSellerReviews,
+  calculateSellerRatingStats,
   DEFAULT_BANKING_DETAILS,
   INITIAL_LISTINGS 
 } from "./lib/firestoreServices";
@@ -94,6 +98,13 @@ export default function App() {
   const [eftTargetSellerName, setEftTargetSellerName] = useState<string | undefined>(undefined);
   const [eftTargetListingId, setEftTargetListingId] = useState<string | undefined>(undefined);
   const [eftTargetListingTitle, setEftTargetListingTitle] = useState<string | undefined>(undefined);
+
+  // Seller Reviews & 5-Star Rating State
+  const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
+  const [isLeaveReviewModalOpen, setIsLeaveReviewModalOpen] = useState<boolean>(false);
+  const [reviewTargetSellerId, setReviewTargetSellerId] = useState<string>("");
+  const [reviewTargetSellerName, setReviewTargetSellerName] = useState<string>("");
+  const [reviewTargetPartPurchased, setReviewTargetPartPurchased] = useState<string>("");
 
   // Mobile Accordion State
   const [isMobileCategoryAccordionOpen, setIsMobileCategoryAccordionOpen] = useState<boolean>(false);
@@ -219,6 +230,14 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  // Subscribe to Seller Reviews & 5-Star Feedback from Firestore
+  useEffect(() => {
+    const unsub = subscribeToSellerReviews((loadedReviews) => {
+      setSellerReviews(loadedReviews);
+    });
+    return () => unsub();
+  }, []);
+
   // Sync Firebase Auth state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -258,6 +277,17 @@ export default function App() {
     setEftTargetListingId(targetListingId);
     setEftTargetListingTitle(targetListingTitle);
     setIsEftModalOpen(true);
+  };
+
+  const handleOpenLeaveReview = (sellerId: string, sellerName: string, partPurchased: string = "") => {
+    setReviewTargetSellerId(sellerId);
+    setReviewTargetSellerName(sellerName);
+    setReviewTargetPartPurchased(partPurchased);
+    setIsLeaveReviewModalOpen(true);
+  };
+
+  const getSellerRatingStats = (sellerId: string) => {
+    return calculateSellerRatingStats(sellerId, sellerReviews);
   };
 
   const handleOpenWebSearch = (initialQ?: string, initialProv?: string, initialTown?: string) => {
@@ -1529,20 +1559,25 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pr-1">
-                  {listings.map((item) => (
-                    <div key={item.id} className="h-full">
-                      <ListingCard 
-                        listing={item} 
-                        onViewDetails={() => handleViewListing(item)} 
-                        onViewSellerProfile={(sellerId) => {
-                          setSelectedSellerId(sellerId);
-                          setActiveTab("seller-profile");
-                        }}
-                        isCompared={comparedListingIds.includes(item.id)}
-                        onToggleCompare={handleToggleCompare}
-                      />
-                    </div>
-                  ))}
+                  {listings.map((item) => {
+                    const stats = getSellerRatingStats(item.sellerId);
+                    return (
+                      <div key={item.id} className="h-full">
+                        <ListingCard 
+                          listing={item} 
+                          onViewDetails={() => handleViewListing(item)} 
+                          onViewSellerProfile={(sellerId) => {
+                            setSelectedSellerId(sellerId);
+                            setActiveTab("seller-profile");
+                          }}
+                          isCompared={comparedListingIds.includes(item.id)}
+                          onToggleCompare={handleToggleCompare}
+                          sellerRating={stats.averageRating}
+                          sellerReviewsCount={stats.totalReviews}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -1740,6 +1775,7 @@ export default function App() {
             const profileSellerEmail = profileSeller?.sellerEmail || (seller?.id === selectedSellerId ? seller?.email : "");
             const profileSellerPhone = profileSeller?.sellerPhone || (seller?.id === selectedSellerId ? seller?.phone : "");
             const profileSellerLocation = profileSeller?.location || "South Africa";
+            const ratingStats = getSellerRatingStats(selectedSellerId);
 
             return (
               <div className="max-w-5xl mx-auto w-full py-4 space-y-6 animate-fade-in flex flex-col flex-1 min-h-0">
@@ -1763,6 +1799,22 @@ export default function App() {
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>Verified Distributor</span>
                       </span>
+
+                      {/* 5-Star Rating Header Pill */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const revSection = document.getElementById("seller-reviews-section");
+                          revSection?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-200/90 text-amber-900 text-xs font-bold px-3 py-1 rounded-full transition-colors cursor-pointer"
+                        title="View reviews and feedback breakdown"
+                      >
+                        <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                        <span className="font-extrabold">{ratingStats.averageRating.toFixed(1)}</span>
+                        <span className="text-slate-600 font-medium">({ratingStats.totalReviews} Review{ratingStats.totalReviews === 1 ? "" : "s"})</span>
+                      </button>
+
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
                         <CheckCircle className="w-3.5 h-3.5" />
                         <span>ZA Standard Vetted</span>
@@ -1825,6 +1877,15 @@ export default function App() {
                         </a>
                       )}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenLeaveReview(selectedSellerId, profileSellerName)}
+                      className="w-full bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold py-2 rounded-xl text-[11px] text-center flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                      <span>Rate This Seller</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1834,6 +1895,15 @@ export default function App() {
                   sellerLocation={profileSellerLocation}
                   sellerPhone={profileSellerPhone}
                   sellerBusinessName={profileSeller?.sellerBusinessName || (seller?.id === selectedSellerId ? seller?.businessName : undefined)}
+                />
+
+                {/* 5-STAR CUSTOMER REVIEWS & FEEDBACK SECTION */}
+                <SellerReviewsSection
+                  sellerId={selectedSellerId}
+                  sellerName={profileSellerName}
+                  sellerBusinessName={profileSeller?.sellerBusinessName || (seller?.id === selectedSellerId ? seller?.businessName : undefined)}
+                  ratingStats={ratingStats}
+                  onOpenLeaveReview={() => handleOpenLeaveReview(selectedSellerId, profileSellerName)}
                 />
 
                 {/* Seller's Listings Stock Section */}
@@ -1870,6 +1940,8 @@ export default function App() {
                             }}
                             isCompared={comparedListingIds.includes(item.id)}
                             onToggleCompare={handleToggleCompare}
+                            sellerRating={ratingStats.averageRating}
+                            sellerReviewsCount={ratingStats.totalReviews}
                           />
                         </div>
                       ))}
@@ -1976,18 +2048,24 @@ export default function App() {
       />
 
       {/* LISTING DETAILS MODAL CONTAINER */}
-      {selectedListingId && selectedListing && (
-        <ListingDetailsModal 
-          listing={selectedListing} 
-          onClose={() => setSelectedListingId(null)} 
-          onViewSellerProfile={(sellerId) => {
-            setSelectedSellerId(sellerId);
-            setActiveTab("seller-profile");
-          }}
-          onOpenWebSearch={(q, prov, town) => handleOpenWebSearch(q, prov, town)}
-          onOpenEftModal={handleOpenEftModal}
-        />
-      )}
+      {selectedListingId && selectedListing && (() => {
+        const stats = getSellerRatingStats(selectedListing.sellerId);
+        return (
+          <ListingDetailsModal 
+            listing={selectedListing} 
+            onClose={() => setSelectedListingId(null)} 
+            onViewSellerProfile={(sellerId) => {
+              setSelectedSellerId(sellerId);
+              setActiveTab("seller-profile");
+            }}
+            onOpenWebSearch={(q, prov, town) => handleOpenWebSearch(q, prov, town)}
+            onOpenEftModal={handleOpenEftModal}
+            sellerRating={stats.averageRating}
+            sellerReviewsCount={stats.totalReviews}
+            onRateSeller={(sid, sname, ptitle) => handleOpenLeaveReview(sid, sname, ptitle)}
+          />
+        );
+      })()}
 
       {/* WEB SEARCH ENGINE MODAL */}
       <WebSearchEngineModal
@@ -2091,6 +2169,16 @@ export default function App() {
         targetListingId={eftTargetListingId}
         targetListingTitle={eftTargetListingTitle}
         sellerBusinessName={seller?.businessName || seller?.name}
+        onOpenReviewModal={(sid, sname, ptitle) => handleOpenLeaveReview(sid, sname, ptitle)}
+      />
+
+      {/* 5-STAR SELLER RATING & FEEDBACK MODAL */}
+      <LeaveReviewModal
+        isOpen={isLeaveReviewModalOpen}
+        onClose={() => setIsLeaveReviewModalOpen(false)}
+        sellerId={reviewTargetSellerId}
+        sellerName={reviewTargetSellerName}
+        initialPartPurchased={reviewTargetPartPurchased}
       />
 
       {/* APP OWNER PASSWORD PROTECTED SETTINGS MODAL */}

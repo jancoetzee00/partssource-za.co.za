@@ -24,7 +24,7 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from './firebase';
-import { PartListing, Seller, SubscriptionBankingDetails, PartRequest, ProofOfPayment, SellerNotification } from '../types';
+import { PartListing, Seller, SubscriptionBankingDetails, PartRequest, ProofOfPayment, SellerNotification, SellerReview, SellerRatingStats } from '../types';
 
 export const DEFAULT_BANKING_DETAILS: SubscriptionBankingDetails = {
   bankName: "First National Bank (FNB)",
@@ -841,4 +841,188 @@ export function subscribeToPaymentProofs(callback: (proofs: ProofOfPayment[]) =>
     }
   );
 }
+
+export const INITIAL_SELLER_REVIEWS: SellerReview[] = [
+  {
+    id: "rev-001",
+    sellerId: "sel-001",
+    sellerName: "Gauteng Diesel Tech",
+    rating: 5,
+    comment: "Ordered a complete set of Denso injectors for my Hilux 2.8 GD-6. Gert bench-tested them with test sheets included. Dispatched via Courier Guy same day. Fantastic service!",
+    reviewerName: "Pieter Nagel",
+    reviewerContact: "+27 83 241 8890",
+    partPurchased: "Hilux 2.8 GD-6 Common Rail Injectors",
+    verifiedPurchase: true,
+    createdAt: "2026-07-14T09:30:00Z"
+  },
+  {
+    id: "rev-002",
+    sellerId: "sel-001",
+    sellerName: "Gauteng Diesel Tech",
+    rating: 5,
+    comment: "Top notch diesel injection workshop in Pretoria. Bought an Isuzu D-Max turbocharger, perfectly balanced and works like new. Zero hesitation recommending them.",
+    reviewerName: "Kobus van Zyl",
+    partPurchased: "Isuzu D-Max 3.0 D-Teq Turbocharger",
+    verifiedPurchase: true,
+    createdAt: "2026-08-02T14:15:00Z"
+  },
+  {
+    id: "rev-003",
+    sellerId: "sel-001",
+    sellerName: "Gauteng Diesel Tech",
+    rating: 4,
+    comment: "Quality parts, accurate OEM numbers, fast response over WhatsApp. Will definitely use again for fleet spares.",
+    reviewerName: "Dumi Logistics CC",
+    partPurchased: "Toyota Fortuner High Pressure Fuel Pump",
+    verifiedPurchase: true,
+    createdAt: "2026-08-11T11:45:00Z"
+  },
+  {
+    id: "rev-004",
+    sellerId: "sel-002",
+    sellerName: "Coastline Truck Spares",
+    rating: 5,
+    comment: "Sipho supplied a complete Scania R480 front axle assembly and diff. Exactly as described, saved our transport company thousands in downtime. Professional dismantling yard in Durban.",
+    reviewerName: "Jabu Khumalo (Trans-Natal Haulers)",
+    reviewerContact: "jabu@transnatalhaulers.co.za",
+    partPurchased: "Scania R480 Retarder & Rear Differential",
+    verifiedPurchase: true,
+    createdAt: "2026-06-28T16:20:00Z"
+  },
+  {
+    id: "rev-005",
+    sellerId: "sel-002",
+    sellerName: "Coastline Truck Spares",
+    rating: 5,
+    comment: "Great heavy duty commercial spares stock. Sourced a Volvo FH16 intercooler and turbo setup. Verified condition on delivery.",
+    reviewerName: "Henk Botha",
+    partPurchased: "Volvo FH16 Turbocharger & Intercooler",
+    verifiedPurchase: true,
+    createdAt: "2026-07-22T08:00:00Z"
+  },
+  {
+    id: "rev-006",
+    sellerId: "sel-002",
+    sellerName: "Coastline Truck Spares",
+    rating: 4,
+    comment: "Good communication and straightforward payment via EFT with fast POP acknowledgment.",
+    reviewerName: "Bongani M.",
+    partPurchased: "Mercedes Actros MP4 Brake Calipers",
+    verifiedPurchase: true,
+    createdAt: "2026-08-08T13:10:00Z"
+  },
+  {
+    id: "rev-007",
+    sellerId: "sel-003",
+    sellerName: "Cape Motor Spares",
+    rating: 5,
+    comment: "Allie from Cape Motor Spares in Parow sorted me out with an original VW Polo EA211 cylinder head. Flawless condition, clean casing. Highly recommended!",
+    reviewerName: "Brandon De Villiers",
+    partPurchased: "VW Polo 1.0 TSI EA211 Cylinder Head",
+    verifiedPurchase: true,
+    createdAt: "2026-07-19T10:45:00Z"
+  },
+  {
+    id: "rev-008",
+    sellerId: "sel-003",
+    sellerName: "Cape Motor Spares",
+    rating: 5,
+    comment: "Collected Ford Ranger 3.2 6-speed gearbox in person. Tested and warranty given. Honest seller.",
+    reviewerName: "Rashid Adams",
+    partPurchased: "Ford Ranger 3.2 TDCi Manual 4x4 Gearbox",
+    verifiedPurchase: true,
+    createdAt: "2026-08-14T15:30:00Z"
+  }
+];
+
+/**
+ * Realtime listener for Seller Reviews & 5-Star Feedback
+ */
+export function subscribeToSellerReviews(callback: (reviews: SellerReview[]) => void) {
+  const path = 'seller_reviews';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    async (snapshot) => {
+      if (snapshot.empty) {
+        // Seed initial reviews if empty
+        callback(INITIAL_SELLER_REVIEWS);
+        for (const rev of INITIAL_SELLER_REVIEWS) {
+          try {
+            await setDoc(doc(db, 'seller_reviews', rev.id), rev, { merge: true });
+          } catch (e) {
+            console.warn('Initial seller review seed warning:', e);
+          }
+        }
+      } else {
+        const items: SellerReview[] = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            sellerId: data.sellerId || '',
+            sellerName: data.sellerName || '',
+            rating: typeof data.rating === 'number' ? data.rating : 5,
+            comment: data.comment || '',
+            reviewerName: data.reviewerName || 'Verified Buyer',
+            reviewerContact: data.reviewerContact || '',
+            partPurchased: data.partPurchased || '',
+            verifiedPurchase: data.verifiedPurchase !== undefined ? Boolean(data.verifiedPurchase) : true,
+            createdAt: data.createdAt || new Date().toISOString()
+          };
+        });
+        items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        callback(items);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  );
+}
+
+/**
+ * Add a new Seller Review / 5-Star Transaction Feedback
+ */
+export async function addSellerReview(reviewData: Omit<SellerReview, 'id'>): Promise<string> {
+  const path = 'seller_reviews';
+  try {
+    const docRef = await addDoc(collection(db, path), {
+      ...reviewData,
+      rating: Math.max(1, Math.min(5, Math.round(reviewData.rating))),
+      createdAt: reviewData.createdAt || new Date().toISOString()
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    throw error;
+  }
+}
+
+/**
+ * Calculate Average Rating, Count, and Breakdown for a specific Seller
+ */
+export function calculateSellerRatingStats(sellerId: string, allReviews: SellerReview[]): SellerRatingStats {
+  const sellerReviews = allReviews.filter((r) => r.sellerId === sellerId);
+  const totalReviews = sellerReviews.length;
+
+  const ratingDistribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  let sum = 0;
+
+  sellerReviews.forEach((r) => {
+    const star = Math.max(1, Math.min(5, Math.round(r.rating))) as 1 | 2 | 3 | 4 | 5;
+    ratingDistribution[star] = (ratingDistribution[star] || 0) + 1;
+    sum += r.rating;
+  });
+
+  const averageRating = totalReviews > 0 ? Number((sum / totalReviews).toFixed(1)) : 5.0;
+
+  return {
+    averageRating,
+    totalReviews,
+    ratingDistribution,
+    reviews: sellerReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  };
+}
+
 

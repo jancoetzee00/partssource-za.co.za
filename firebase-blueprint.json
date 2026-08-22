@@ -147,9 +147,30 @@
         "payerContact": { "type": "string", "maxLength": 100 }
       },
       "required": ["sellerId", "title", "message", "type"]
+    },
+    "SellerReview": {
+      "title": "Seller Review & Rating",
+      "description": "5-star buyer transaction reviews and feedback for verified sellers",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "sellerName": { "type": "string", "maxLength": 100 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 2000 },
+        "reviewerName": { "type": "string", "maxLength": 100 },
+        "reviewerContact": { "type": "string", "maxLength": 100 },
+        "partPurchased": { "type": "string", "maxLength": 200 },
+        "verifiedPurchase": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["sellerId", "rating", "comment", "reviewerName"]
     }
   },
   "firestore": {
+    "/seller_reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/SellerReview" },
+      "description": "Customer and buyer 5-star transaction reviews and feedback for sellers"
+    },
     "/payment_proofs/{popId}": {
       "schema": { "$ref": "#/entities/ProofOfPayment" },
       "description": "Uploaded proof of payment records"

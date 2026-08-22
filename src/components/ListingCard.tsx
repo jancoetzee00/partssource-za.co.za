@@ -13,6 +13,8 @@ interface ListingCardProps {
   onViewSellerProfile?: (sellerId: string) => void;
   isCompared?: boolean;
   onToggleCompare?: (id: string) => void;
+  sellerRating?: number;
+  sellerReviewsCount?: number;
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({ 
@@ -20,7 +22,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onViewDetails, 
   onViewSellerProfile,
   isCompared = false,
-  onToggleCompare
+  onToggleCompare,
+  sellerRating,
+  sellerReviewsCount
 }) => {
   // Format price in South African Rand (ZAR)
   const formatPrice = (amount: number) => {
@@ -175,21 +179,28 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               </span>
             ) : <span />}
 
-            <div className="flex items-center gap-1 text-[11px] text-slate-500">
-              <span className="text-slate-400">By:</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
+              <span className="text-slate-400 shrink-0">By:</span>
               {onViewSellerProfile ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onViewSellerProfile(listing.sellerId);
                   }}
-                  className="font-bold text-slate-800 hover:text-blue-600 hover:underline truncate max-w-[140px] cursor-pointer"
+                  className="font-bold text-slate-800 hover:text-blue-600 hover:underline truncate max-w-[120px] cursor-pointer"
                 >
                   {listing.sellerBusinessName || listing.sellerName}
                 </button>
               ) : (
-                <span className="font-semibold text-slate-800 truncate max-w-[140px]">
+                <span className="font-semibold text-slate-800 truncate max-w-[120px]">
                   {listing.sellerBusinessName || listing.sellerName}
+                </span>
+              )}
+
+              {sellerRating !== undefined && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded-md shrink-0">
+                  <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                  <span>{sellerRating.toFixed(1)}</span>
                 </span>
               )}
             </div>

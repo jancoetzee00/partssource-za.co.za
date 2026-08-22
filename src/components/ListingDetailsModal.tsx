@@ -22,7 +22,8 @@ import {
   Building2, 
   Share2, 
   Copy, 
-  Check 
+  Check,
+  Star 
 } from "lucide-react";
 
 interface ListingDetailsModalProps {
@@ -39,6 +40,9 @@ interface ListingDetailsModalProps {
     targetListingId?: string,
     targetListingTitle?: string
   ) => void;
+  sellerRating?: number;
+  sellerReviewsCount?: number;
+  onRateSeller?: (sellerId: string, sellerName: string, partTitle: string) => void;
 }
 
 export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({ 
@@ -46,7 +50,10 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
   onClose, 
   onViewSellerProfile,
   onOpenWebSearch,
-  onOpenEftModal
+  onOpenEftModal,
+  sellerRating,
+  sellerReviewsCount,
+  onRateSeller
 }) => {
   const [activeTab, setActiveTab] = useState<"phone" | "message">("phone");
   const [copiedLink, setCopiedLink] = useState(false);
@@ -262,7 +269,27 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                 ) : (
                   <span className="block font-semibold text-white">{listing.sellerBusinessName || listing.sellerName}</span>
                 )}
-                <span>Active Advertiser</span>
+                
+                <div className="flex items-center justify-end gap-1 mt-0.5">
+                  {sellerRating !== undefined ? (
+                    <div className="inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.2 rounded font-bold">
+                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      <span>{sellerRating.toFixed(1)}</span>
+                      {sellerReviewsCount !== undefined && <span className="opacity-80 font-normal">({sellerReviewsCount})</span>}
+                    </div>
+                  ) : (
+                    <span>Active Advertiser</span>
+                  )}
+                  {onRateSeller && (
+                    <button
+                      type="button"
+                      onClick={() => onRateSeller(listing.sellerId, listing.sellerBusinessName || listing.sellerName, listing.title)}
+                      className="text-blue-300 hover:text-white underline cursor-pointer ml-1"
+                    >
+                      Rate
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

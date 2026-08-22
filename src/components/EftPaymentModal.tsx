@@ -49,6 +49,7 @@ interface EftPaymentModalProps {
   targetListingId?: string;
   targetListingTitle?: string;
   onUploadSuccess?: (popRecord: ProofOfPayment) => void;
+  onOpenReviewModal?: (sellerId: string, sellerName: string, partTitle: string) => void;
 }
 
 interface SABankPortal {
@@ -95,7 +96,8 @@ export const EftPaymentModal: React.FC<EftPaymentModalProps> = ({
   targetSellerName,
   targetListingId,
   targetListingTitle,
-  onUploadSuccess
+  onUploadSuccess,
+  onOpenReviewModal
 }) => {
   const [activeTab, setActiveTab] = useState<"banking_details" | "upload_pop">("banking_details");
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -476,6 +478,25 @@ export const EftPaymentModal: React.FC<EftPaymentModalProps> = ({
                     <span>•</span>
                     <span>Amount: <strong className="text-emerald-400">R{toastNotification.amount.toLocaleString("en-ZA")}</strong></span>
                   </div>
+
+                  {targetSellerId && onOpenReviewModal && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const sid = targetSellerId;
+                          const sname = targetSellerName || sellerBusinessName || "Seller";
+                          const ltitle = targetListingTitle || "Parts Purchase";
+                          onClose();
+                          onOpenReviewModal(sid, sname, ltitle);
+                        }}
+                        className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+                        <span>Rate Seller (Leave 5-Star Feedback)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
