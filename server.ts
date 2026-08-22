@@ -13,14 +13,6 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
-// Health check endpoints
-app.get("/healthz", (req, res) => {
-  res.status(200).send("OK");
-});
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
 // In-memory Database for Part Listings
 let listings: PartListing[] = [
   {

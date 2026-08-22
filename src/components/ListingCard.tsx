@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { PartListing } from "../types";
-import { MapPin, Truck, Car, Star, MessageSquare, ArrowLeftRight, Check, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { MapPin, Truck, Car, Star, MessageSquare, ArrowLeftRight, Check, ShieldCheck, ArrowUpRight, Share2 } from "lucide-react";
 
 interface ListingCardProps {
   listing: PartListing;
@@ -26,6 +26,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   sellerRating,
   sellerReviewsCount
 }) => {
+  const [copiedShare, setCopiedShare] = useState(false);
+
   // Format price in South African Rand (ZAR)
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat("en-ZA", {
@@ -33,6 +35,51 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       currency: "ZAR",
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Helper to format South African phone numbers for WhatsApp wa.me links
+  const formatWhatsAppPhone = (phoneStr: string) => {
+    let cleaned = phoneStr.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) {
+      cleaned = cleaned.substring(1);
+    } else if (cleaned.startsWith('0')) {
+      cleaned = '27' + cleaned.substring(1);
+    }
+    return cleaned;
+  };
+
+  // Construct direct link to this listing
+  const currentListingUrl = typeof window !== "undefined"
+    ? `${window.location.origin}${window.location.pathname}?listingId=${encodeURIComponent(listing.id)}`
+    : `https://partssource.co.za?listingId=${listing.id}`;
+
+  // Formatted message containing listing title, price, and direct link
+  const shareWhatsAppMessage = 
+    `*${listing.title}*\n` +
+    `💰 *Price:* ${formatPrice(listing.price)}\n` +
+    `🔧 *Condition:* ${listing.condition}\n` +
+    (listing.partNumber ? `🔢 *OEM / Part #:* ${listing.partNumber}\n` : '') +
+    (listing.brand ? `🏷️ *Brand:* ${listing.brand}\n` : '') +
+    `🚗 *Fitment:* ${listing.compatibility || listing.vehicleType}\n` +
+    `📍 *Location:* ${listing.location}\n\n` +
+    `Check out this spare part on *Partssource ZA*:\n` +
+    `${currentListingUrl}`;
+
+  // WhatsApp share link without pre-assigned recipient so user can share with any contact/group
+  const shareWhatsAppUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareWhatsAppMessage)}`;
+
+  // Direct contact seller WhatsApp link
+  const cleanSellerPhone = formatWhatsAppPhone(listing.sellerPhone);
+  const contactSellerWhatsAppUrl = `https://wa.me/${cleanSellerPhone}?text=${encodeURIComponent(
+    `Hi ${listing.sellerName}, I saw your listing for "${listing.title}" (${formatPrice(listing.price)}) on Partssource ZA. Is this still available?`
+  )}`;
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Also trigger native share on mobile if desired, or open WhatsApp share URL
+    window.open(shareWhatsAppUrl, "_blank", "noopener,noreferrer");
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
   };
 
   const getConditionBadge = (cond: string) => {
@@ -227,22 +274,38 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </div>
             
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* Direct WhatsApp Quick Launch */}
+              {/* Dedicated Share to WhatsApp Button */}
+              <button
+                type="button"
+                id={`share-whatsapp-${listing.id}`}
+                onClick={handleShareClick}
+                title="Share to WhatsApp (Title, Price & Direct Link)"
+                className="bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 hover:text-emerald-800 border border-emerald-200/90 p-2.5 rounded-xl transition-all duration-200 flex items-center justify-center cursor-pointer shadow-2xs hover:scale-105 active:scale-95 relative group/share"
+              >
+                <Share2 className="w-4 h-4 text-emerald-600" />
+                {copiedShare && (
+                  <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap animate-fade-in pointer-events-none">
+                    Sharing...
+                  </span>
+                )}
+              </button>
+
+              {/* Direct WhatsApp Seller Chat */}
               <a
-                href={`https://wa.me/${listing.sellerPhone.replace(/\s+/g, "").replace("+", "")}?text=${encodeURIComponent(
-                  `Hi ${listing.sellerName}, I saw your listing for "${listing.title}" (R${listing.price.toLocaleString("en-ZA")}) on Partssource ZA. Is this still available?`
-                )}`}
+                id={`contact-seller-wa-${listing.id}`}
+                href={contactSellerWhatsAppUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 title="WhatsApp Seller Directly"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white p-2.5 rounded-xl transition-all duration-200 flex items-center justify-center cursor-pointer shadow-xs hover:scale-105"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl transition-all duration-200 flex items-center justify-center cursor-pointer shadow-xs hover:scale-105"
               >
                 <MessageSquare className="w-4 h-4 fill-white" />
               </a>
 
               <button
                 type="button"
+                id={`view-listing-details-${listing.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onViewDetails(listing.id);
