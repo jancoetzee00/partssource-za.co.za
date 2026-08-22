@@ -99,36 +99,36 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
   const hasActiveQuickFilter = Boolean(selectedVehicleType || selectedCategory || selectedCondition);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3 transition-colors">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3">
       {/* Top Header & Vehicle Fleet Row */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
         {/* Left: Quick Filters Title & Vehicle Type Selector */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-extrabold text-xs tracking-tight mr-1">
-            <span className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <div className="flex items-center gap-1.5 text-slate-800 font-extrabold text-xs tracking-tight mr-1">
+            <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <SlidersHorizontal className="w-3.5 h-3.5" />
             </span>
-            <span className="uppercase text-[11px] font-black tracking-wider text-slate-700 dark:text-slate-300">
+            <span className="uppercase text-[11px] font-black tracking-wider text-slate-700">
               Quick Filters:
             </span>
           </div>
 
           {/* Vehicle Type Pills */}
-          <div className="inline-flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-xl gap-1">
+          <div className="inline-flex items-center bg-slate-100/90 p-1 rounded-xl gap-1">
             <button
               id="filter-vehicle-all"
               type="button"
               onClick={() => onSelectVehicleType(null)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedVehicleType === null
-                  ? "bg-slate-900 dark:bg-blue-600 text-white shadow-2xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-700/80"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>All Vehicles</span>
               <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                selectedVehicleType === null ? "bg-slate-700 dark:bg-blue-800 text-slate-200" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                selectedVehicleType === null ? "bg-slate-700 text-slate-200" : "bg-slate-200 text-slate-600"
               }`}>
                 {vehicleCounts.all}
               </span>
@@ -141,13 +141,13 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedVehicleType === "Truck"
                   ? "bg-blue-600 text-white shadow-2xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-700/80"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
               }`}
             >
               <Truck className="w-3.5 h-3.5" />
               <span>Heavy Trucks</span>
               <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                selectedVehicleType === "Truck" ? "bg-blue-800 text-blue-100" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                selectedVehicleType === "Truck" ? "bg-blue-800 text-blue-100" : "bg-slate-200 text-slate-600"
               }`}>
                 {vehicleCounts.truck}
               </span>
@@ -160,13 +160,13 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedVehicleType === "Car"
                   ? "bg-blue-600 text-white shadow-2xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-700/80"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
               }`}
             >
               <Car className="w-3.5 h-3.5" />
               <span>Cars & Bakkies</span>
               <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                selectedVehicleType === "Car" ? "bg-blue-800 text-blue-100" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                selectedVehicleType === "Car" ? "bg-blue-800 text-blue-100" : "bg-slate-200 text-slate-600"
               }`}>
                 {vehicleCounts.car}
               </span>
@@ -188,8 +188,8 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
                   onClick={() => onSelectCondition(isSelected ? null : cond)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
                     isSelected
-                      ? "bg-slate-800 dark:bg-slate-700 text-white border-slate-800 dark:border-slate-600 shadow-2xs"
-                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                      ? "bg-slate-800 text-white border-slate-800 shadow-2xs"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
                   {isSelected && <Check className="w-3 h-3" />}
@@ -205,7 +205,7 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
               id="clear-quick-filters-btn"
               type="button"
               onClick={onClearFilters}
-              className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0"
               title="Reset all quick filters"
             >
               <X className="w-3 h-3" />
@@ -218,15 +218,15 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
       {/* Categories Horizontal Scroll Row */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
             Popular Part Categories
           </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-            Showing <strong className="text-slate-900 dark:text-slate-100">{totalFilteredCount}</strong> matching spares
+          <span className="text-[10px] font-bold text-slate-500">
+            Showing <strong className="text-slate-900">{totalFilteredCount}</strong> matching spares
           </span>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
           {/* "All Categories" Pill */}
           <button
             id="filter-category-all"
@@ -235,7 +235,7 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
               selectedCategory === null
                 ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/60 dark:border-slate-700"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-slate-200/60"
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -256,10 +256,10 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
                   isSelected
                     ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-600/20 font-bold"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                    : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                <span className={isSelected ? "text-white" : "text-slate-500 dark:text-slate-400"}>
+                <span className={isSelected ? "text-white" : "text-slate-500"}>
                   {getCategoryIcon(cat)}
                 </span>
                 <span>{cat}</span>
@@ -267,7 +267,7 @@ export const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({
                   <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
                     isSelected 
                       ? "bg-blue-800 text-blue-100" 
-                      : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      : "bg-slate-100 text-slate-600"
                   }`}>
                     {count}
                   </span>

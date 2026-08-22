@@ -19,7 +19,6 @@ import { PartRequestsView } from "./components/PartRequestsView";
 import { EftPaymentModal } from "./components/EftPaymentModal";
 import { DesktopDownloadModal } from "./components/DesktopDownloadModal";
 import { QuickFiltersBar } from "./components/QuickFiltersBar";
-import { ThemeToggle } from "./components/ThemeToggle";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
@@ -140,33 +139,6 @@ export default function App() {
   // Stats State
   const [activeSellerCount, setActiveSellerCount] = useState<number>(452);
   const [listedItemsCount, setListedItemsCount] = useState<number>(15402);
-
-  // Workshop Dark / Light Theme State
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("partssource_theme");
-      if (saved === "dark" || saved === "light") return saved;
-      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        return "dark";
-      }
-    }
-    return "light";
-  });
-
-  // Apply Theme class to <html> element
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("partssource_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
 
   // Memoized local app detection
   const isLocalApp = React.useMemo(() => {
@@ -582,9 +554,9 @@ export default function App() {
   };
 
   return (
-    <div className="bg-[#f8fafc] dark:bg-slate-950 w-full min-h-screen overflow-hidden flex flex-col font-sans text-slate-900 dark:text-slate-100 tracking-tight selection:bg-blue-600 selection:text-white transition-colors duration-200">
+    <div className="bg-[#f8fafc] w-full min-h-screen overflow-hidden flex flex-col font-sans text-slate-900 tracking-tight selection:bg-blue-600 selection:text-white">
       {/* Top Header Navigation */}
-      <nav className="glass-panel sticky top-0 border-b border-slate-200/90 dark:border-slate-800 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-30 shadow-2xs">
+      <nav className="glass-panel sticky top-0 border-b border-slate-200/90 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-30 shadow-2xs">
         {/* Left Brand Container */}
         <div 
           className="flex items-center gap-3 cursor-pointer group shrink-0"
@@ -597,14 +569,14 @@ export default function App() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1">
-              <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white font-display">
+              <span className="text-lg font-black tracking-tight text-slate-900 font-display">
                 PARTSSOURCE
               </span>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-2xs">
                 .ZA
               </span>
             </div>
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase hidden sm:block">
+            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase hidden sm:block">
               SA Heavy & Auto Spares Network
             </span>
           </div>
@@ -626,13 +598,13 @@ export default function App() {
                 }
               }}
               placeholder="Search truck & car spares, OEM part #, engine code..." 
-              className="w-full bg-slate-100/90 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/90 dark:hover:bg-slate-900 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700/80 focus:border-blue-500 rounded-full py-2 pl-9.5 pr-28 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-inner"
+              className="w-full bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 rounded-full py-2 pl-9.5 pr-28 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 placeholder-slate-400 shadow-inner"
             />
             <div className="absolute right-1.5 flex items-center gap-1">
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery("")}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold px-1.5 cursor-pointer"
+                  className="text-[11px] text-slate-400 hover:text-slate-600 font-bold px-1.5 cursor-pointer"
                 >
                   ✕
                 </button>
@@ -671,8 +643,8 @@ export default function App() {
             onClick={() => { setActiveTab("browse"); }}
             className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer hidden md:flex items-center gap-1 ${
               activeTab === "browse" 
-                ? "bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs" 
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                ? "bg-slate-900 text-white shadow-2xs" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -684,8 +656,8 @@ export default function App() {
             onClick={() => { setActiveTab("requests"); }}
             className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === "requests" 
-                ? "bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs" 
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                ? "bg-slate-900 text-white shadow-2xs" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             <span>Requests</span>
@@ -701,8 +673,8 @@ export default function App() {
             onClick={() => { setActiveTab("pricing"); }}
             className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all cursor-pointer hidden lg:block ${
               activeTab === "pricing" 
-                ? "bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs" 
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                ? "bg-slate-900 text-white shadow-2xs" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             Pricing
@@ -711,17 +683,17 @@ export default function App() {
           {/* EFT Payments Link / Gateway */}
           <button
             onClick={() => handleOpenEftModal("subscription")}
-            className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
             title="View verified SA EFT Banking details, bank app links & payment slip"
           >
-            <Building2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
             <span className="hidden sm:inline">EFT Hub</span>
           </button>
 
           {/* Download / Install Desktop App Header Button */}
           <button
             onClick={() => setIsDesktopModalOpen(true)}
-            className="bg-slate-900 dark:bg-slate-800 hover:bg-blue-600 dark:hover:bg-blue-600 text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95 border border-slate-700/50"
+            className="bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
             title="Download and install Partssource ZA desktop application"
           >
             <Monitor className="w-3.5 h-3.5 text-blue-400" />
@@ -729,17 +701,14 @@ export default function App() {
             <span className="md:hidden">App</span>
           </button>
 
-          {/* Global Theme Toggle Button */}
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
-
           {/* Owner Settings: Only visible on local / dev app */}
           {isLocalApp && (
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-full shadow-2xs"
+              className="text-slate-700 hover:text-blue-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1.5 rounded-full shadow-2xs"
               title="App Owner Settings & Banking Configuration (Local Mode Only)"
             >
-              <Settings className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+              <Settings className="w-3.5 h-3.5 text-slate-700" />
               <span className="hidden xl:inline">Settings</span>
             </button>
           )}
@@ -747,7 +716,7 @@ export default function App() {
           {seller ? (
             <button 
               onClick={() => { setActiveTab("dashboard"); }}
-              className="bg-slate-950 dark:bg-slate-800 hover:bg-blue-600 text-white px-3.5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-slate-700/50"
+              className="bg-slate-950 hover:bg-blue-600 text-white px-3.5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <User className="w-3.5 h-3.5 text-amber-400" />
               <span className="truncate max-w-[100px]">{seller.businessName || seller.name}</span>
@@ -755,7 +724,7 @@ export default function App() {
           ) : (
             <button 
               onClick={() => { setActiveTab("dashboard"); }}
-              className="bg-slate-950 dark:bg-slate-800 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs hover:shadow-md border border-slate-700/50"
+              className="bg-slate-950 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs hover:shadow-md"
             >
               Seller Hub
             </button>
@@ -766,17 +735,17 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR FILTER PANEL - Only visible during browse mode */}
         {activeTab === "browse" && (
-          <aside className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200/90 dark:border-slate-800 p-5 flex flex-col flex-shrink-0 hidden md:flex overflow-y-auto space-y-5 transition-colors">
+          <aside className="w-72 bg-white border-r border-slate-200/90 p-5 flex flex-col flex-shrink-0 hidden md:flex overflow-y-auto space-y-5">
             {/* Filter Reset Button */}
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div className="flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Refine Spares</span>
+                <Filter className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Refine Spares</span>
               </div>
               {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
                 <button 
                   onClick={clearAllFilters}
-                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
                 >
                   Reset All
                 </button>
@@ -784,9 +753,9 @@ export default function App() {
             </div>
 
             {/* Filter Section: Location Narrowing (Province & Town) */}
-            <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-slate-800">
+            <div className="space-y-3 pb-5 border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-amber-500" />
                   <span>Province (RSA)</span>
                 </h3>
@@ -796,7 +765,7 @@ export default function App() {
                       setSelectedProvince(null);
                       setSelectedTown(null);
                     }}
-                    className="text-[10px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 font-semibold"
+                    className="text-[10px] text-slate-400 hover:text-rose-600 font-semibold"
                   >
                     Clear
                   </button>
@@ -808,7 +777,7 @@ export default function App() {
                 <select
                   value={selectedProvince || ""}
                   onChange={(e) => handleProvinceSelect(e.target.value ? e.target.value : null)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                 >
                   <option value="">All 9 Provinces (RSA)</option>
                   {SA_PROVINCES.map((prov) => (
@@ -822,13 +791,13 @@ export default function App() {
               {/* Town / City Select */}
               {selectedProvince && (
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-1">
                     Town in {selectedProvince}
                   </label>
                   <select
                     value={selectedTown || ""}
                     onChange={(e) => setSelectedTown(e.target.value ? e.target.value : null)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                   >
                     <option value="">All Towns in {selectedProvince}</option>
                     {availableTowns.map((town) => (
@@ -842,7 +811,7 @@ export default function App() {
 
               {/* Quick Major Province Chips */}
               <div className="pt-1">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                   Popular Hubs:
                 </span>
                 <div className="grid grid-cols-4 gap-1">
@@ -859,8 +828,8 @@ export default function App() {
                         onClick={() => handleProvinceSelect(isSelected ? null : p.name)}
                         className={`text-[10px] py-1 rounded-lg font-bold transition-all text-center cursor-pointer ${
                           isSelected
-                            ? "bg-slate-900 dark:bg-blue-600 text-white shadow-xs"
-                            : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700"
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80"
                         }`}
                       >
                         {p.label}
@@ -872,8 +841,8 @@ export default function App() {
             </div>
 
             {/* Filter Section: Vehicle / Fleet Type */}
-            <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-[11px] font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Vehicle Fitment</h3>
+            <div className="space-y-3 pb-5 border-b border-slate-100">
+              <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Vehicle Fitment</h3>
               <div className="grid grid-cols-3 gap-1 text-xs">
                 {[
                   { label: "All", val: null },
@@ -889,7 +858,7 @@ export default function App() {
                       className={`py-1.5 rounded-lg text-center font-bold text-[11px] transition-all cursor-pointer ${
                         isChecked
                           ? "bg-blue-600 text-white shadow-xs"
-                          : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
                       }`}
                     >
                       {item.label}
@@ -900,30 +869,30 @@ export default function App() {
             </div>
 
             {/* Filter Section: Category Selectors */}
-            <div className="space-y-2 pb-5 border-b border-slate-100 dark:border-slate-800 flex-1">
+            <div className="space-y-2 pb-5 border-b border-slate-100 flex-1">
               <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Categories</h3>
+                <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Categories</h3>
                 {selectedCategory && (
                   <button
                     onClick={() => setSelectedCategory(null)}
-                    className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                    className="text-[10px] text-blue-600 hover:underline font-semibold"
                   >
                     All
                   </button>
                 )}
               </div>
 
-              <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-1 text-xs text-slate-600 max-h-56 overflow-y-auto pr-1">
                 <button 
                   onClick={() => setSelectedCategory(null)}
                   className={`w-full text-left p-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                     selectedCategory === null 
-                      ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold" 
-                      : "hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300"
+                      ? "bg-blue-50 text-blue-700 font-bold" 
+                      : "hover:bg-slate-50 text-slate-700"
                   }`}
                 >
                   <span>All Categories</span>
-                  {selectedCategory === null && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                  {selectedCategory === null && <Check className="w-3.5 h-3.5 text-blue-600" />}
                 </button>
                 {categoriesList.map((cat) => (
                   <button 
@@ -931,20 +900,20 @@ export default function App() {
                     onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
                     className={`w-full text-left p-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                       selectedCategory === cat 
-                        ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold" 
-                        : "hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300"
+                        ? "bg-blue-50 text-blue-700 font-bold" 
+                        : "hover:bg-slate-50 text-slate-700"
                     }`}
                   >
                     <span className="truncate">{cat}</span>
-                    {selectedCategory === cat && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />}
+                    {selectedCategory === cat && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Filter Section: Condition */}
-            <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-[11px] font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Condition</h3>
+            <div className="space-y-3 pb-5 border-b border-slate-100">
+              <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Condition</h3>
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                 {["New", "Like New", "Refurbished", "Good", "Fair", "For Parts"].map((cond) => {
                   const isChecked = selectedCondition === cond;
@@ -954,8 +923,8 @@ export default function App() {
                       onClick={() => setSelectedCondition(isChecked ? null : cond)}
                       className={`py-1.5 px-2 rounded-lg border text-center transition-all font-bold cursor-pointer ${
                         isChecked 
-                          ? "bg-slate-950 dark:bg-blue-600 text-white border-slate-950 dark:border-blue-600 shadow-xs" 
-                          : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                          ? "bg-slate-950 text-white border-slate-950 shadow-xs" 
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                       }`}
                     >
                       {cond}
@@ -967,22 +936,22 @@ export default function App() {
 
             {/* Filter Section: Price range */}
             <div className="space-y-3 pb-4">
-              <h3 className="text-[11px] font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Price Range (ZAR)</h3>
+              <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Price Range (ZAR)</h3>
               <div className="flex items-center gap-2">
                 <input 
                   type="number" 
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : "")}
                   placeholder="Min (R)" 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-hidden focus:border-blue-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
                 />
-                <span className="text-slate-300 dark:text-slate-600 text-xs">-</span>
+                <span className="text-slate-300 text-xs">-</span>
                 <input 
                   type="number" 
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : "")}
                   placeholder="Max (R)" 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-hidden focus:border-blue-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
                 />
               </div>
 
@@ -990,25 +959,25 @@ export default function App() {
               <div className="grid grid-cols-2 gap-1 text-[10px]">
                 <button
                   onClick={() => { setMinPrice(0); setMaxPrice(1000); }}
-                  className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-center font-medium"
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
                 >
                   Under R1,000
                 </button>
                 <button
                   onClick={() => { setMinPrice(1000); setMaxPrice(5000); }}
-                  className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-center font-medium"
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
                 >
                   R1k - R5k
                 </button>
                 <button
                   onClick={() => { setMinPrice(5000); setMaxPrice(20000); }}
-                  className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-center font-medium"
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
                 >
                   R5k - R20k
                 </button>
                 <button
                   onClick={() => { setMinPrice(20000); setMaxPrice(""); }}
-                  className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-center font-medium"
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-600 p-1.5 rounded-lg border border-slate-200 text-center font-medium"
                 >
                   R20,000+
                 </button>
@@ -1138,30 +1107,30 @@ export default function App() {
               <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white font-display">
+                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 font-display">
                       {selectedCategory ? selectedCategory : "Available Spares Catalog"}
                     </h2>
-                    <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-black px-2.5 py-0.5 rounded-full">
+                    <span className="bg-slate-200 text-slate-800 text-xs font-black px-2.5 py-0.5 rounded-full">
                       {listings.length}
                     </span>
                   </div>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                  <p className="text-slate-500 text-xs mt-0.5">
                     {selectedProvince ? `Filtered by ${selectedProvince}` : "Vetted stock across South Africa"}
                   </p>
                 </div>
 
                 {/* Sorting Controls & Mobile Category Accordion */}
                 <div className="flex items-center gap-2">
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 px-3 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs">
-                    <span className="text-slate-400 dark:text-slate-400 font-semibold">Sort:</span>
+                  <div className="bg-white border border-slate-200/90 px-3 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs">
+                    <span className="text-slate-400 font-semibold">Sort:</span>
                     <select 
                       value={sortOrder} 
                       onChange={(e) => setSortOrder(e.target.value)}
-                      className="font-bold text-slate-800 dark:text-slate-200 bg-transparent border-none outline-hidden p-0 cursor-pointer text-xs"
+                      className="font-bold text-slate-800 bg-transparent border-none outline-hidden p-0 cursor-pointer text-xs"
                     >
-                      <option value="newest" className="dark:bg-slate-900">Featured / Newest</option>
-                      <option value="price-asc" className="dark:bg-slate-900">Price: Low to High</option>
-                      <option value="price-desc" className="dark:bg-slate-900">Price: High to Low</option>
+                      <option value="newest">Featured / Newest</option>
+                      <option value="price-asc">Price: Low to High</option>
+                      <option value="price-desc">Price: High to Low</option>
                     </select>
                   </div>
                   
@@ -1172,7 +1141,7 @@ export default function App() {
                       className={`p-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
                         selectedCategory || isMobileCategoryAccordionOpen
                           ? "bg-blue-600 text-white"
-                          : "bg-slate-900 dark:bg-slate-800 text-white hover:bg-slate-800"
+                          : "bg-slate-900 text-white hover:bg-slate-800"
                       }`}
                       title="Toggle Category Filter Menu"
                     >
@@ -1186,27 +1155,27 @@ export default function App() {
 
               {/* MOBILE ACCORDION CATEGORY DROPDOWN PANEL (md:hidden) */}
               <div className="md:hidden">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden transition-all">
+                <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all">
                   {/* Accordion Trigger Header */}
                   <button
                     type="button"
                     onClick={() => setIsMobileCategoryAccordionOpen(!isMobileCategoryAccordionOpen)}
-                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-50 transition-colors cursor-pointer"
                     aria-expanded={isMobileCategoryAccordionOpen}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                        selectedCategory ? "bg-blue-600 text-white" : "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400"
+                        selectedCategory ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"
                       }`}>
                         <Layers className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-xs font-bold text-slate-900">
                             {selectedCategory ? `Category: ${selectedCategory}` : "All Spare Part Categories"}
                           </span>
                           {selectedCategory && (
-                            <span className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full uppercase">
+                            <span className="bg-blue-100 text-blue-700 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full uppercase">
                               Filtered
                             </span>
                           )}
@@ -1218,7 +1187,7 @@ export default function App() {
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0 text-slate-500 pl-2">
-                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                      <span className="text-[11px] font-bold text-blue-600">
                         {isMobileCategoryAccordionOpen ? "Close" : "Browse"}
                       </span>
                       <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isMobileCategoryAccordionOpen ? "rotate-180" : ""}`} />
@@ -1227,7 +1196,7 @@ export default function App() {
 
                   {/* Accordion Expandable Menu Body */}
                   {isMobileCategoryAccordionOpen && (
-                    <div className="border-t border-slate-100 dark:border-slate-800 p-3.5 bg-slate-50/60 dark:bg-slate-900/80 space-y-3.5 animate-fadeIn">
+                    <div className="border-t border-slate-100 p-3.5 bg-slate-50/60 space-y-3.5 animate-fadeIn">
                       {/* Top Action Bar in Accordion */}
                       <div className="flex items-center justify-between px-0.5">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -1240,7 +1209,7 @@ export default function App() {
                               setSelectedCategory(null);
                               setIsMobileCategoryAccordionOpen(false);
                             }}
-                            className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 underline cursor-pointer"
+                            className="text-[11px] font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer"
                           >
                             Reset Category
                           </button>
@@ -1371,54 +1340,54 @@ export default function App() {
 
               {/* Filtering indicators if active */}
               {(selectedProvince || selectedTown || selectedCategory || selectedVehicleType || selectedCondition || minPrice || maxPrice || searchQuery) && (
-                <div className="flex flex-wrap items-center gap-2 bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-3 rounded-xl backdrop-blur-xs">
-                  <span className="text-xs text-slate-400 dark:text-slate-400 font-bold uppercase mr-1">Active:</span>
+                <div className="flex flex-wrap items-center gap-2 bg-white/70 border border-slate-200 p-3 rounded-xl">
+                  <span className="text-xs text-slate-400 font-bold uppercase mr-1">Active:</span>
                   {selectedProvince && (
-                    <span className="text-xs bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
-                      <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                      <MapPin className="w-3 h-3 text-amber-600" />
                       <span>{selectedProvince}</span>
-                      <button onClick={() => { setSelectedProvince(null); setSelectedTown(null); }} className="hover:text-amber-950 dark:hover:text-amber-100 ml-1">×</button>
+                      <button onClick={() => { setSelectedProvince(null); setSelectedTown(null); }} className="hover:text-amber-950 ml-1">×</button>
                     </span>
                   )}
                   {selectedTown && (
-                    <span className="text-xs bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                    <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
                       <span>Town: {selectedTown}</span>
-                      <button onClick={() => setSelectedTown(null)} className="hover:text-amber-950 dark:hover:text-amber-100 ml-1">×</button>
+                      <button onClick={() => setSelectedTown(null)} className="hover:text-amber-950 ml-1">×</button>
                     </span>
                   )}
                   {selectedCategory && (
-                    <span className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                       {selectedCategory}
-                      <button onClick={() => setSelectedCategory(null)} className="hover:text-blue-900 dark:hover:text-blue-100 ml-1">×</button>
+                      <button onClick={() => setSelectedCategory(null)} className="hover:text-blue-900 ml-1">×</button>
                     </span>
                   )}
                   {selectedVehicleType && (
-                    <span className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                       Type: {selectedVehicleType === "Truck" ? "Trucks" : selectedVehicleType === "Car" ? "Cars" : "Other"}
-                      <button onClick={() => setSelectedVehicleType(null)} className="hover:text-blue-900 dark:hover:text-blue-100 ml-1">×</button>
+                      <button onClick={() => setSelectedVehicleType(null)} className="hover:text-blue-900 ml-1">×</button>
                     </span>
                   )}
                   {selectedCondition && (
-                    <span className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                       {selectedCondition}
-                      <button onClick={() => setSelectedCondition(null)} className="hover:text-blue-900 dark:hover:text-blue-100 ml-1">×</button>
+                      <button onClick={() => setSelectedCondition(null)} className="hover:text-blue-900 ml-1">×</button>
                     </span>
                   )}
                   {searchQuery && (
-                    <span className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                       Query: "{searchQuery}"
-                      <button onClick={() => setSearchQuery("")} className="hover:text-blue-900 dark:hover:text-blue-100 ml-1">×</button>
+                      <button onClick={() => setSearchQuery("")} className="hover:text-blue-900 ml-1">×</button>
                     </span>
                   )}
                   {(minPrice || maxPrice) && (
-                    <span className="text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                       Price: R{minPrice || 0} - R{maxPrice || "Max"}
-                      <button onClick={() => { setMinPrice(""); setMaxPrice(""); }} className="hover:text-blue-900 dark:hover:text-blue-100 ml-1">×</button>
+                      <button onClick={() => { setMinPrice(""); setMaxPrice(""); }} className="hover:text-blue-900 ml-1">×</button>
                     </span>
                   )}
                   <button 
                     onClick={clearAllFilters}
-                    className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 underline font-semibold ml-auto cursor-pointer"
+                    className="text-xs text-slate-500 hover:text-slate-900 underline font-semibold ml-auto cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -1427,10 +1396,10 @@ export default function App() {
 
               {/* Error Alert Panel */}
               {error && (
-                <div className="bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-4 rounded-xl flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
                   <p className="text-sm">{error}</p>
-                  <button onClick={() => setError(null)} className="text-xs text-red-600 dark:text-red-400 underline font-semibold ml-auto">
+                  <button onClick={() => setError(null)} className="text-xs text-red-600 underline font-semibold ml-auto">
                     Dismiss
                   </button>
                 </div>
@@ -1452,10 +1421,10 @@ export default function App() {
 
               {/* Recently Viewed Section */}
               {recentlyViewed.length > 0 && (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs mb-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
-                      <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-1.5 text-slate-900">
+                      <Clock className="w-4 h-4 text-blue-600" />
                       <h3 className="text-xs font-bold uppercase tracking-wider">Recently Viewed Spares</h3>
                     </div>
                     <button 
@@ -1469,15 +1438,15 @@ export default function App() {
                     </button>
                   </div>
                   
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                     {recentlyViewed.map((item) => (
                       <div 
                         key={`recent-${item.id}`} 
                         onClick={() => handleViewListing(item)}
-                        className="flex-shrink-0 w-64 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-xl p-3 flex gap-3 cursor-pointer transition-all hover:border-blue-300 dark:hover:border-blue-500 group"
+                        className="flex-shrink-0 w-64 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl p-3 flex gap-3 cursor-pointer transition-all hover:border-blue-300 group"
                       >
                         {/* Thumbnail Image */}
-                        <div className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0 relative">
+                        <div className="w-16 h-16 rounded-lg bg-slate-200 overflow-hidden shrink-0 relative">
                           <img 
                             src={item.images && item.images[0] ? item.images[0] : "https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=300&q=80"} 
                             alt={item.title}
@@ -1494,23 +1463,23 @@ export default function App() {
                         {/* Brief info */}
                         <div className="flex flex-col justify-between min-w-0 flex-1">
                           <div className="space-y-0.5">
-                            <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block truncate">
+                            <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider block truncate">
                               {item.category}
                             </span>
-                            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">
                               {item.title}
                             </h4>
                           </div>
                           
                           <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                            <span className="text-xs font-extrabold text-slate-900">
                               {new Intl.NumberFormat("en-ZA", {
                                 style: "currency",
                                 currency: "ZAR",
                                 maximumFractionDigits: 0
                               }).format(item.price)}
                             </span>
-                            <span className="text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">
+                            <span className="text-[9px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">
                               {item.condition}
                             </span>
                           </div>
@@ -1525,24 +1494,24 @@ export default function App() {
               {loading ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-20">
                   <div className="relative w-12 h-12">
-                    <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-slate-200 rounded-full animate-spin"></div>
                     <div className="absolute top-0 left-0 w-12 h-12 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
                   </div>
-                  <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-widest mt-4">Loading Marketplace Spares...</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">Loading Marketplace Spares...</span>
                 </div>
               ) : listings.length === 0 ? (
-                <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 sm:p-12 text-center max-w-lg mx-auto my-8 space-y-4 shadow-xs">
-                  <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto">
+                <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 text-center max-w-lg mx-auto my-8 space-y-4 shadow-xs">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
                     <Search className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Spares Matching Current Filters</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Can't find what you're looking for? You can clear filters, search the web with AI, or broadcast a <strong className="text-slate-800 dark:text-slate-200">Part Request</strong> to 450+ verified South African scrap yards.
+                  <h3 className="text-lg font-bold text-slate-900">No Spares Matching Current Filters</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Can't find what you're looking for? You can clear filters, search the web with AI, or broadcast a <strong className="text-slate-800">Part Request</strong> to 450+ verified South African scrap yards.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <button 
                       onClick={clearAllFilters}
-                      className="w-full sm:w-auto bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-colors"
+                      className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-colors"
                     >
                       Clear Filters
                     </button>
