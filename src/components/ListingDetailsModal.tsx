@@ -5,7 +5,25 @@
 
 import React, { useState } from "react";
 import { PartListing } from "../types";
-import { X, MapPin, Phone, Mail, CheckCircle, MessageSquare, ShieldCheck, Info, Sparkles, AlertCircle, Loader2, Globe, Search, Building2 } from "lucide-react";
+import { 
+  X, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  CheckCircle, 
+  MessageSquare, 
+  ShieldCheck, 
+  Info, 
+  Sparkles, 
+  AlertCircle, 
+  Loader2, 
+  Globe, 
+  Search, 
+  Building2, 
+  Share2, 
+  Copy, 
+  Check 
+} from "lucide-react";
 
 interface ListingDetailsModalProps {
   listing: PartListing;
@@ -31,6 +49,7 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
   onOpenEftModal
 }) => {
   const [activeTab, setActiveTab] = useState<"phone" | "message">("phone");
+  const [copiedLink, setCopiedLink] = useState(false);
   
   // Message Form State
   const [buyerName, setBuyerName] = useState("");
@@ -74,10 +93,35 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
     }, 1200);
   };
 
-  // Generate pre-filled WhatsApp link
-  const whatsAppText = encodeURIComponent(`Hi ${listing.sellerName}, I saw your listing for "${listing.title}" (R${listing.price.toLocaleString("en-ZA")}) on Partssource ZA. Is this still available?`);
+  // Generate direct message WhatsApp link to contact seller
+  const whatsAppText = encodeURIComponent(`Hi ${listing.sellerName}, I saw your listing for "${listing.title}" (${formatPrice(listing.price)}) on Partssource ZA. Is this still available?`);
   const cleanPhone = listing.sellerPhone.replace(/\s+/g, '').replace('+', '');
   const whatsAppLink = `https://wa.me/${cleanPhone}?text=${whatsAppText}`;
+
+  // Generate pre-filled WhatsApp share link (with title, price, vehicle type & direct link)
+  const currentListingUrl = typeof window !== "undefined"
+    ? `${window.location.origin}${window.location.pathname}?listingId=${encodeURIComponent(listing.id)}`
+    : `https://partssource.co.za?listingId=${listing.id}`;
+
+  const shareWhatsAppMessage = encodeURIComponent(
+    `*${listing.title}*\n` +
+    `💰 Price: ${formatPrice(listing.price)}\n` +
+    `📍 Location: ${listing.location}\n` +
+    `🏷️ Category: ${listing.category} (${listing.vehicleType === "Truck" ? "Heavy Truck Spares" : listing.vehicleType === "Car" ? "Car & Bakkie Spares" : "Universal Spares"})\n` +
+    (listing.partNumber ? `🔢 OEM / Part #: ${listing.partNumber}\n` : "") +
+    (listing.brand ? `⚙️ Brand: ${listing.brand}\n` : "") +
+    `\n🔗 View full listing on Partssource ZA:\n${currentListingUrl}`
+  );
+
+  const shareWhatsAppUrl = `https://api.whatsapp.com/send?text=${shareWhatsAppMessage}`;
+
+  const handleCopyLink = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(currentListingUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -219,6 +263,46 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                   <span className="block font-semibold text-white">{listing.sellerBusinessName || listing.sellerName}</span>
                 )}
                 <span>Active Advertiser</span>
+              </div>
+            </div>
+
+            {/* Share to WhatsApp Action Box */}
+            <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-2xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Share2 className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-xs font-bold text-emerald-950 leading-tight">
+                    Share Spare via WhatsApp
+                  </span>
+                  <span className="block text-[10px] text-emerald-700 font-medium truncate">
+                    Includes title, price, location & listing link
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <a
+                  id="share-to-whatsapp-btn"
+                  href={shareWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer hover:shadow-xs"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 fill-white" />
+                  <span>Share to WhatsApp</span>
+                </a>
+                <button
+                  id="copy-listing-link-btn"
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="bg-white hover:bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  title="Copy listing URL to clipboard"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-emerald-700" />}
+                  <span>{copiedLink ? "Copied" : "Copy Link"}</span>
+                </button>
               </div>
             </div>
 

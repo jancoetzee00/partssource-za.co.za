@@ -1,6 +1,6 @@
 {
   "name": "Partssource ZA",
-  "description": "South African advertising marketplace for truck and car parts with subscription management, seller invoice generation, password-protected banking, inventory deletion & catalog management in settings, EFT payment gateway with direct Proof of Payment (POP) upload & seller notification, part sourcing requests broadcast hub, and an AI-powered live web spares search engine.",
+  "description": "South African advertising marketplace for truck and car parts with quick-filter pill navigation, subscription management, seller invoice generation, password-protected banking, inventory deletion & catalog management in settings, EFT payment gateway with direct Proof of Payment (POP) upload & seller notification, part sourcing requests broadcast hub, and an AI-powered live web spares search engine.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

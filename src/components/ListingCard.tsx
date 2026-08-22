@@ -34,19 +34,19 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const getConditionBadge = (cond: string) => {
     switch (cond) {
       case "New": 
-        return { dot: "bg-emerald-500", text: "text-emerald-800", bg: "bg-emerald-50 border-emerald-200/80" };
+        return { dot: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200/80 dark:border-emerald-800/80" };
       case "Like New": 
-        return { dot: "bg-teal-500", text: "text-teal-800", bg: "bg-teal-50 border-teal-200/80" };
+        return { dot: "bg-teal-500", text: "text-teal-800 dark:text-teal-300", bg: "bg-teal-50 dark:bg-teal-950/60 border-teal-200/80 dark:border-teal-800/80" };
       case "Refurbished": 
-        return { dot: "bg-blue-500", text: "text-blue-800", bg: "bg-blue-50 border-blue-200/80" };
+        return { dot: "bg-blue-500", text: "text-blue-800 dark:text-blue-300", bg: "bg-blue-50 dark:bg-blue-950/60 border-blue-200/80 dark:border-blue-800/80" };
       case "Good": 
-        return { dot: "bg-amber-500", text: "text-amber-800", bg: "bg-amber-50 border-amber-200/80" };
+        return { dot: "bg-amber-500", text: "text-amber-800 dark:text-amber-300", bg: "bg-amber-50 dark:bg-amber-950/60 border-amber-200/80 dark:border-amber-800/80" };
       case "Fair": 
-        return { dot: "bg-orange-500", text: "text-orange-800", bg: "bg-orange-50 border-orange-200/80" };
+        return { dot: "bg-orange-500", text: "text-orange-800 dark:text-orange-300", bg: "bg-orange-50 dark:bg-orange-950/60 border-orange-200/80 dark:border-orange-800/80" };
       case "For Parts": 
-        return { dot: "bg-rose-500", text: "text-rose-800", bg: "bg-rose-50 border-rose-200/80" };
+        return { dot: "bg-rose-500", text: "text-rose-800 dark:text-rose-300", bg: "bg-rose-50 dark:bg-rose-950/60 border-rose-200/80 dark:border-rose-800/80" };
       default: 
-        return { dot: "bg-slate-400", text: "text-slate-700", bg: "bg-slate-50 border-slate-200" };
+        return { dot: "bg-slate-400", text: "text-slate-700 dark:text-slate-300", bg: "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700" };
     }
   };
 
@@ -55,15 +55,15 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   return (
     <div 
       id={`listing-${listing.id}`}
-      className={`group relative bg-white rounded-2xl transition-all duration-300 border flex flex-col h-full overflow-hidden hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
+      className={`group relative bg-white dark:bg-slate-900 rounded-2xl transition-all duration-300 border flex flex-col h-full overflow-hidden hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
         listing.isPremium 
-          ? "border-blue-300 ring-2 ring-blue-500/10 shadow-sm" 
-          : "border-slate-200/90 shadow-2xs hover:border-slate-300"
+          ? "border-blue-300 dark:border-blue-700 ring-2 ring-blue-500/10 shadow-sm" 
+          : "border-slate-200/90 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700"
       }`}
       onClick={() => onViewDetails(listing.id)}
     >
       {/* Image Gallery Thumbnail */}
-      <div className="h-48 sm:h-52 overflow-hidden bg-slate-100 relative">
+      <div className="h-48 sm:h-52 overflow-hidden bg-slate-100 dark:bg-slate-800 relative">
         <img 
           src={listing.images[0] || "https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&q=80&w=600"} 
           alt={listing.title}
@@ -108,7 +108,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
         {/* Bottom Overlay Info */}
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent p-3 pt-7 flex items-center justify-between">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1.5 backdrop-blur-md bg-white/90 shadow-2xs ${condStyle.text} ${condStyle.bg}`}>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1.5 backdrop-blur-md shadow-2xs ${condStyle.text} ${condStyle.bg}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${condStyle.dot}`} />
             {listing.condition}
           </span>
@@ -146,49 +146,49 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       <div className="p-4 flex flex-col flex-grow justify-between gap-3">
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md uppercase tracking-wider">
               {listing.category}
             </span>
             {listing.brand && (
-              <span className="text-[11px] font-semibold text-slate-500 truncate max-w-[120px]">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[120px]">
                 {listing.brand}
               </span>
             )}
           </div>
 
-          <h3 className="font-display font-bold text-slate-900 text-sm md:text-[15px] leading-snug line-clamp-2 min-h-[2.4rem] group-hover:text-blue-600 transition-colors">
+          <h3 className="font-display font-bold text-slate-900 dark:text-slate-100 text-sm md:text-[15px] leading-snug line-clamp-2 min-h-[2.4rem] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {listing.title}
           </h3>
           
           {/* Fitment Compatibility */}
-          <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-xs">
-            <p className="text-slate-600 line-clamp-1 text-[11px]">
-              <strong className="text-slate-800">Fits:</strong> {listing.compatibility}
+          <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 rounded-lg p-2 text-xs">
+            <p className="text-slate-600 dark:text-slate-400 line-clamp-1 text-[11px]">
+              <strong className="text-slate-800 dark:text-slate-200">Fits:</strong> {listing.compatibility}
             </p>
           </div>
 
           {/* OEM Part Number & Seller */}
           <div className="flex items-center justify-between pt-1 text-xs">
             {listing.partNumber ? (
-              <span className="font-mono text-[10px] bg-slate-100 border border-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
+              <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
                 OEM: {listing.partNumber}
               </span>
             ) : <span />}
 
-            <div className="flex items-center gap-1 text-[11px] text-slate-500">
-              <span className="text-slate-400">By:</span>
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="text-slate-400 dark:text-slate-500">By:</span>
               {onViewSellerProfile ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onViewSellerProfile(listing.sellerId);
                   }}
-                  className="font-bold text-slate-800 hover:text-blue-600 hover:underline truncate max-w-[140px] cursor-pointer"
+                  className="font-bold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate max-w-[140px] cursor-pointer"
                 >
                   {listing.sellerBusinessName || listing.sellerName}
                 </button>
               ) : (
-                <span className="font-semibold text-slate-800 truncate max-w-[140px]">
+                <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[140px]">
                   {listing.sellerBusinessName || listing.sellerName}
                 </span>
               )}
@@ -197,8 +197,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         </div>
 
         {/* Bottom Section: Location & Pricing */}
-        <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
-          <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1 text-[11px] truncate">
               <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span className="truncate font-medium">{listing.location}</span>
@@ -207,10 +207,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
           <div className="flex items-center justify-between gap-2">
             <div>
-              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+              <span className="block text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
                 Price (ZAR)
               </span>
-              <span className="font-display font-black text-base md:text-lg text-slate-900 tracking-tight">
+              <span className="font-display font-black text-base md:text-lg text-slate-900 dark:text-white tracking-tight">
                 {formatPrice(listing.price)}
               </span>
             </div>
@@ -236,7 +236,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                   e.stopPropagation();
                   onViewDetails(listing.id);
                 }}
-                className="bg-slate-950 hover:bg-blue-600 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all duration-200 shadow-xs flex items-center gap-1 cursor-pointer group-hover:bg-blue-600"
+                className="bg-slate-950 dark:bg-slate-800 hover:bg-blue-600 dark:hover:bg-blue-600 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all duration-200 shadow-xs flex items-center gap-1 cursor-pointer group-hover:bg-blue-600 border border-transparent dark:border-slate-700"
               >
                 <span>View</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
