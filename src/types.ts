@@ -31,11 +31,27 @@ export interface Seller {
   businessName?: string;
   email: string;
   phone: string;
+  whatsapp?: string;
+  avatar?: string;
+  province?: string;
+  city?: string;
+  address?: string;
+  description?: string;
+  isVerified?: boolean;
+  joinedDate?: string;
+  website?: string;
+  bankDetails?: {
+    bankName?: string;
+    accountHolder?: string;
+    accountNumber?: string;
+    branchCode?: string;
+  };
   subscription: {
     active: boolean;
     plan: 'Starter' | 'Pro' | 'Enterprise' | 'None';
     expiryDate?: string;
     amountPaid?: number;
+    paymentRef?: string;
   };
 }
 

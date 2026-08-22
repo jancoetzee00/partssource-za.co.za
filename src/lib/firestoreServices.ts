@@ -47,11 +47,27 @@ export const INITIAL_SELLERS: Seller[] = [
     businessName: "Gauteng Diesel Tech",
     email: "gert@dieseltech.co.za",
     phone: "+27 82 555 0192",
+    whatsapp: "+27825550192",
+    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200",
+    province: "Gauteng",
+    city: "Pretoria",
+    address: "144 Van Der Hoff Rd, Pretoria West",
+    description: "Specializing in Toyota 2.8 GD-6, D-4D, Isuzu D-Max, and commercial bakkie turbochargers & common rail diesel injection systems.",
+    isVerified: true,
+    joinedDate: "2024-01-15",
+    website: "https://dieseltech.co.za",
+    bankDetails: {
+      bankName: "FNB",
+      accountHolder: "Gauteng Diesel Tech CC",
+      accountNumber: "62819283741",
+      branchCode: "250655"
+    },
     subscription: {
       active: true,
       plan: "Pro",
       expiryDate: "2026-12-31",
-      amountPaid: 499
+      amountPaid: 499,
+      paymentRef: "SUB-DIESELTECH"
     }
   },
   {
@@ -60,24 +76,56 @@ export const INITIAL_SELLERS: Seller[] = [
     businessName: "Coastline Truck Spares",
     email: "info@coastlinetruckspares.co.za",
     phone: "+27 71 555 3847",
+    whatsapp: "+27715553847",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200",
+    province: "KwaZulu-Natal",
+    city: "Durban",
+    address: "88 South Coast Road, Clairwood, Durban",
+    description: "Heavy commercial truck dismantling yard. Premium refurbished parts for Scania R-Series, Volvo FH12/FH16, Mercedes Actros, and MAN TGA.",
+    isVerified: true,
+    joinedDate: "2023-11-20",
+    website: "https://coastlinetruckspares.co.za",
+    bankDetails: {
+      bankName: "Standard Bank",
+      accountHolder: "Coastline Truck Spares (Pty) Ltd",
+      accountNumber: "042938471",
+      branchCode: "051001"
+    },
     subscription: {
       active: true,
       plan: "Enterprise",
       expiryDate: "2027-03-15",
-      amountPaid: 999
+      amountPaid: 999,
+      paymentRef: "SUB-COASTLINE"
     }
   },
   {
     id: "sel-003",
     name: "Moegamat Allie",
-    businessName: "Cape Cape Motor Spares",
+    businessName: "Cape Motor Spares",
     email: "allie@capemotor.co.za",
     phone: "+27 21 555 4981",
+    whatsapp: "+27215554981",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
+    province: "Western Cape",
+    city: "Cape Town",
+    address: "42 Voortrekker Road, Parow, Cape Town",
+    description: "Supplying genuine OEM engines, cylinder heads, gearboxes, and body panels for VW Polo, Golf, Ford Ranger, and Nissan NP200.",
+    isVerified: true,
+    joinedDate: "2024-02-10",
+    website: "https://capemotorspares.co.za",
+    bankDetails: {
+      bankName: "Nedbank",
+      accountHolder: "Cape Motor Spares Trust",
+      accountNumber: "1192837465",
+      branchCode: "198765"
+    },
     subscription: {
       active: true,
       plan: "Starter",
       expiryDate: "2026-09-30",
-      amountPaid: 249
+      amountPaid: 249,
+      paymentRef: "SUB-CAPEMOTOR"
     }
   }
 ];
@@ -110,6 +158,16 @@ export function subscribeToSellers(callback: (sellers: Seller[]) => void) {
             businessName: data.businessName || '',
             email: data.email || '',
             phone: data.phone || '',
+            whatsapp: data.whatsapp || '',
+            avatar: data.avatar || '',
+            province: data.province || '',
+            city: data.city || '',
+            address: data.address || '',
+            description: data.description || '',
+            isVerified: data.isVerified !== undefined ? data.isVerified : true,
+            joinedDate: data.joinedDate || '',
+            website: data.website || '',
+            bankDetails: data.bankDetails || undefined,
             subscription: data.subscription || {
               active: true,
               plan: 'Pro',
@@ -399,6 +457,76 @@ export async function deleteListingFromFirestore(listingId: string) {
     await deleteDoc(doc(db, 'listings', listingId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
+  }
+}
+
+/**
+ * Bulk delete multiple listings from Firestore by IDs
+ */
+export async function deleteMultipleListingsFromFirestore(listingIds: string[]): Promise<number> {
+  let deletedCount = 0;
+  for (const id of listingIds) {
+    try {
+      await deleteDoc(doc(db, 'listings', id));
+      deletedCount++;
+    } catch (err) {
+      console.warn(`Failed to delete listing ${id}:`, err);
+    }
+  }
+  return deletedCount;
+}
+
+/**
+ * Master Purge: Delete ALL listings from Firestore inventory
+ */
+export async function deleteAllListingsFromFirestore(): Promise<number> {
+  const path = 'listings';
+  try {
+    const listingsRef = collection(db, path);
+    const snapshot = await getDocs(listingsRef);
+    let deletedCount = 0;
+    
+    for (const docSnap of snapshot.docs) {
+      try {
+        await deleteDoc(doc(db, path, docSnap.id));
+        deletedCount++;
+      } catch (err) {
+        console.warn(`Failed to delete doc ${docSnap.id}:`, err);
+      }
+    }
+    return deletedCount;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
+  }
+}
+
+/**
+ * Reset & Seed initial demo inventory parts into Firestore
+ */
+export async function resetInventoryToDefaultSeed(): Promise<number> {
+  const path = 'listings';
+  try {
+    // 1. Purge existing
+    const listingsRef = collection(db, path);
+    const snapshot = await getDocs(listingsRef);
+    for (const docSnap of snapshot.docs) {
+      await deleteDoc(doc(db, path, docSnap.id)).catch(() => {});
+    }
+
+    // 2. Insert initial sample listings
+    let insertedCount = 0;
+    for (const item of INITIAL_LISTINGS) {
+      await addDoc(collection(db, path), {
+        ...item,
+        createdAt: new Date().toISOString()
+      });
+      insertedCount++;
+    }
+    return insertedCount;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
     throw error;
   }
 }

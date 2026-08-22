@@ -84,27 +84,6 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
 
-  // Listen for browser PWA beforeinstallprompt event
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    const handleAppInstalled = () => {
-      setIsAppInstalled(true);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
-
   // EFT Payment Modal State
   const [isEftModalOpen, setIsEftModalOpen] = useState<boolean>(false);
   const [eftModalPurpose, setEftModalPurpose] = useState<"subscription" | "part_purchase" | "general">("subscription");
@@ -115,25 +94,6 @@ export default function App() {
   const [eftTargetListingId, setEftTargetListingId] = useState<string | undefined>(undefined);
   const [eftTargetListingTitle, setEftTargetListingTitle] = useState<string | undefined>(undefined);
 
-  const handleOpenEftModal = (
-    purpose: "subscription" | "part_purchase" | "general" = "subscription", 
-    amount?: number, 
-    ref?: string,
-    targetSellerId?: string,
-    targetSellerName?: string,
-    targetListingId?: string,
-    targetListingTitle?: string
-  ) => {
-    setEftModalPurpose(purpose);
-    setEftModalAmount(amount);
-    setEftModalRef(ref);
-    setEftTargetSellerId(targetSellerId);
-    setEftTargetSellerName(targetSellerName);
-    setEftTargetListingId(targetListingId);
-    setEftTargetListingTitle(targetListingTitle);
-    setIsEftModalOpen(true);
-  };
-
   // Mobile Accordion State
   const [isMobileCategoryAccordionOpen, setIsMobileCategoryAccordionOpen] = useState<boolean>(false);
 
@@ -143,13 +103,6 @@ export default function App() {
   const [webSearchProvince, setWebSearchProvince] = useState<string>("All Provinces");
   const [webSearchTown, setWebSearchTown] = useState<string>("All Towns");
 
-  const handleOpenWebSearch = (initialQ?: string, initialProv?: string, initialTown?: string) => {
-    setWebSearchQuery(initialQ || searchQuery || "");
-    setWebSearchProvince(initialProv || selectedProvince || "All Provinces");
-    setWebSearchTown(initialTown || selectedTown || "All Towns");
-    setIsWebSearchOpen(true);
-  };
-  
   // Listings State
   const [listings, setListings] = useState<PartListing[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -173,50 +126,19 @@ export default function App() {
   const [comparedListingIds, setComparedListingIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
 
-  const handleToggleCompare = (id: string) => {
-    setComparedListingIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((item) => item !== id);
-      }
-      if (prev.length >= 4) {
-        alert("You can compare up to 4 spare parts side-by-side at a time.");
-        return prev;
-      }
-      return [...prev, id];
-    });
-  };
-
   // Recently Viewed State
   const [recentlyViewed, setRecentlyViewed] = useState<PartListing[]>([]);
-
-  // Load recently viewed from sessionStorage
-  useEffect(() => {
-    const stored = sessionStorage.getItem("partssource_recently_viewed");
-    if (stored) {
-      try {
-        setRecentlyViewed(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse recently viewed items", e);
-      }
-    }
-  }, []);
-
-  const handleViewListing = (listing: PartListing) => {
-    setSelectedListingId(listing.id);
-    setRecentlyViewed((prev) => {
-      const filtered = prev.filter((item) => item.id !== listing.id);
-      const updated = [listing, ...filtered].slice(0, 5);
-      sessionStorage.setItem("partssource_recently_viewed", JSON.stringify(updated));
-      return updated;
-    });
-  };
 
   // Seller State & Settings State
   const [seller, setSeller] = useState<Seller | null>(null);
   const [bankingDetails, setBankingDetails] = useState<SubscriptionBankingDetails>(DEFAULT_BANKING_DETAILS);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
-  // Determine if running on local app / dev environment (hidden from public view)
+  // Stats State
+  const [activeSellerCount, setActiveSellerCount] = useState<number>(452);
+  const [listedItemsCount, setListedItemsCount] = useState<number>(15402);
+
+  // Memoized local app detection
   const isLocalApp = React.useMemo(() => {
     if (typeof window === "undefined") return false;
     const host = window.location.hostname || "";
@@ -237,6 +159,39 @@ export default function App() {
     return Boolean(isLocalHostname || isOwnerQuery);
   }, []);
 
+  // Listen for browser PWA beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
+
+  // Load recently viewed from sessionStorage
+  useEffect(() => {
+    const stored = sessionStorage.getItem("partssource_recently_viewed");
+    if (stored) {
+      try {
+        setRecentlyViewed(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse recently viewed items", e);
+      }
+    }
+  }, []);
+
   // Subscribe to Banking Details from Firestore
   useEffect(() => {
     const unsub = subscribeToBankingDetails((data) => {
@@ -252,10 +207,6 @@ export default function App() {
     });
     return () => unsub();
   }, []);
-
-  // Stats
-  const [activeSellerCount, setActiveSellerCount] = useState<number>(452);
-  const [listedItemsCount, setListedItemsCount] = useState<number>(15402);
 
   // Sync Firebase Auth state
   useEffect(() => {
@@ -277,7 +228,56 @@ export default function App() {
       }
     });
     return () => unsub();
-  }, []);
+  }, [seller]);
+
+  const handleOpenEftModal = (
+    purpose: "subscription" | "part_purchase" | "general" = "subscription", 
+    amount?: number, 
+    ref?: string,
+    targetSellerId?: string,
+    targetSellerName?: string,
+    targetListingId?: string,
+    targetListingTitle?: string
+  ) => {
+    setEftModalPurpose(purpose);
+    setEftModalAmount(amount);
+    setEftModalRef(ref);
+    setEftTargetSellerId(targetSellerId);
+    setEftTargetSellerName(targetSellerName);
+    setEftTargetListingId(targetListingId);
+    setEftTargetListingTitle(targetListingTitle);
+    setIsEftModalOpen(true);
+  };
+
+  const handleOpenWebSearch = (initialQ?: string, initialProv?: string, initialTown?: string) => {
+    setWebSearchQuery(initialQ || searchQuery || "");
+    setWebSearchProvince(initialProv || selectedProvince || "All Provinces");
+    setWebSearchTown(initialTown || selectedTown || "All Towns");
+    setIsWebSearchOpen(true);
+  };
+
+  const handleToggleCompare = (id: string) => {
+    setComparedListingIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+      if (prev.length >= 4) {
+        alert("You can compare up to 4 spare parts side-by-side at a time.");
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleViewListing = (listing: PartListing) => {
+    setSelectedListingId(listing.id);
+    setRecentlyViewed((prev) => {
+      const filtered = prev.filter((item) => item.id !== listing.id);
+      const updated = [listing, ...filtered].slice(0, 5);
+      sessionStorage.setItem("partssource_recently_viewed", JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Available towns for current province
   const availableTowns = getTownsForProvince(selectedProvince);
